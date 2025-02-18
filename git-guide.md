@@ -1,7 +1,8 @@
 # Гайд на git
 
+ - Скачать git можно по ссылке https://git-scm.com/downloads
  - Подключение к GitHub с помощью SSH https://docs.github.com/ru/authentication/connecting-to-github-with-ssh
- - Клонирование репозитория `git git@github.com:Resuwu/ProjectLibrary.git`
+ - Клонирование репозитория `git clone git@github.com:Resuwu/ProjectLibrary.git`
  - При выполнении задачи необходимо зафетчить (и если есть изменения запулить) ветку master, затем создать от него новую ветку и выполнить задачу в ней
  - Fetch
 
