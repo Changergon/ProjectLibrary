@@ -11,3 +11,6 @@
    `git clone git@github.com:Resuwu/ProjectLibrary.git`
 2. Создать директорию для файлов БД и скопировать в нее файл docker-compose.yaml из проекта
 3. Перейти в созданную директорию через терминал и создать контейнер командой `docker compose up -d`
+
+## Гайд на git
+ - [Ссылка](git-guide.md)
