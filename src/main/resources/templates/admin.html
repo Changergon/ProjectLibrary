@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление ролями пользователей</title>
+    <link rel="stylesheet" href="/admin.css"> <!-- Подключение CSS -->
+</head>
+<body>
+<header>
+    <h1>Управление ролями пользователей</h1>
+</header>
+<main>
+    <table id="userRolesTable">
+        <thead>
+        <tr>
+            <th>UserID</th>
+            <th>Имя пользователя</th>
+            <th>Email</th>
+            <th>Роли</th>
+            <th>Факультет</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Пользователи будут загружены сюда через JavaScript -->
+        </tbody>
+    </table>
+    <button id="saveRolesButton">Сохранить роли</button>
+</main>
+<footer>
+    <p>&copy; 2024 Электронная библиотека</p>
+</footer>
+<script>
+    // Функция для получения пользователей
+    async function fetchUsers() {
+        try {
+            const response = await fetch('/api/admin/users');
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            const users = await response.json();
+            console.log('Полученные пользователи:', users); // Выводим полученные данные
+            return users;
+        } catch (error) {
+            console.error('Ошибка при получении пользователей:', error);
+            alert('Ошибка при получении пользователей. Проверьте консоль для подробностей.');
+        }
+    }
+
+    async function fetchFaculties() {
+        try {
+            const response = await fetch('/api/faculties');
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            const faculties = await response.json();
+            console.log('Полученные факультеты:', faculties); // Выводим полученные данные
+            return faculties;
+        } catch (error) {
+            console.error('Ошибка при получении факультетов:', error);
+            alert('Ошибка при получении факультетов. Проверьте консоль для подробностей.');
+        }
+    }
+
+
+    // Функция для отображения пользователей
+    async function displayUsers() {
+        const users = await fetchUsers();
+        const faculties = await fetchFaculties(); // Загружаем факультеты
+        const tableBody = document.querySelector('#userRolesTable tbody');
+        tableBody.innerHTML = '';
+
+        if (users && users.length > 0) {
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                <td>${user.userId}</td>
+                <td>${user.username}</td>
+                <td>${user.email}</td>
+                <td>
+                    <label><input type="checkbox" value="STUDENT" ${user.roles.includes('STUDENT') ? 'checked' : ''}> Студент</label><br>
+                    <label><input type="checkbox" value="TEACHER" ${user.roles.includes('TEACHER') ? 'checked' : ''}> Преподаватель</label><br>
+                    <label><input type="checkbox" value="LIBRARIAN" ${user.roles.includes('LIBRARIAN') ? 'checked' : ''}> Библиотекарь</label><br>
+                    <label><input type="checkbox" value="ADMIN" ${user.roles.includes('ADMIN') ? 'checked' : ''}> Администратор</label>
+                </td>
+                <td>
+                    <div id="facultySelect-${user.userId}" class="faculty-select">
+                        ${faculties.map(faculty => {
+                    const isSelected = user.faculties && user.faculties.map(f => f.facultyId).includes(faculty.facultyId);
+                    return `
+                            <div class="faculty-option" data-faculty-id="${faculty.facultyId}"
+                                style="padding: 5px; cursor: pointer; background-color: ${isSelected ? '#d0e0ff' : '#fff'};">
+                                ${faculty.type}
+                            </div>`;
+                }).join('')}
+                    </div>
+                </td>
+            `;
+                tableBody.appendChild(row);
+
+                // Обработчик кликов для выбора факультетов
+                const facultySelectDiv = document.getElementById(`facultySelect-${user.userId}`);
+                facultySelectDiv.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('faculty-option')) {
+                        const facultyId = event.target.getAttribute('data-faculty-id');
+                        const selectedFaculties = Array.from(facultySelectDiv.getElementsByClassName('faculty-option'))
+                            .filter(option => option.style.backgroundColor === 'rgb(208, 224, 255)') // Проверяем цвет фона
+                            .map(option => option.getAttribute('data-faculty-id'));
+
+                        // Переключаем выбор факультета
+                        if (selectedFaculties.includes(facultyId)) {
+                            event.target.style.backgroundColor = '#fff'; // Убираем выделение
+                        } else {
+                            event.target.style.backgroundColor = '#d0e0ff'; // Добавляем выделение
+                        }
+                    }
+                });
+            });
+        } else {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td colspan="5">Пользователи не найдены</td>`;
+            tableBody.appendChild(row);
+        }
+    }
+
+    // Обработчик события для сохранения ролей и назначения факультетов
+    document.getElementById('saveRolesButton').addEventListener('click', async () => {
+        const rows = document.querySelectorAll('#userRolesTable tbody tr');
+        const updates = [];
+
+        rows.forEach(row => {
+            const userId = row.cells[0].innerText;
+            const checkboxes = row.cells[3].querySelectorAll('input[type="checkbox"]');
+            const selectedRoles = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+            const facultySelectDiv = document.getElementById(`facultySelect-${userId}`);
+
+            // Получаем все выбранные факультеты
+            const selectedFacultyIds = Array.from(facultySelectDiv.getElementsByClassName('faculty-option'))
+                .filter(option => option.style.backgroundColor === 'rgb(208, 224, 255)') // Проверяем цвет фона
+                .map(option => option.getAttribute('data-faculty-id'));
+
+            updates.push({ userId, roles: selectedRoles, facultyIds: selectedFacultyIds });
+        });
+
+        try {
+            const response = await fetch('/api/admin/update-roles', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updates)
+            });
+            if (!response.ok) {
+                throw new Error('Ошибка при обновлении ролей: ' + response.statusText);
+            }
+            alert('Роли и факультеты успешно обновлены!');
+        } catch (error) {
+            console.error(error);
+            alert('Не удалось обновить роли и факультеты. Проверьте консоль для подробностей.');
+        }
+    });
+
+    displayUsers();
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить книгу</title>
+    <link rel="stylesheet" href="/addbook.css"> <!-- Подключение CSS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+        async function submitForm(event) {
+            event.preventDefault(); // Предотвращаем стандартное поведение формы
+
+            const formData = new FormData(event.target); // Получаем данные формы
+
+            // Собираем выбранные факультеты
+            const selectedFaculties = [];
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            checkboxes.forEach(checkbox => {
+                const facultyId = checkbox.value; // Получаем ID факультета как строку
+                selectedFaculties.push(facultyId); // Добавляем строковое значение
+            });
+
+            // Проверяем, выбраны ли факультеты
+            if (selectedFaculties.length === 0) {
+                alert("Пожалуйста, выберите хотя бы один факультет."); // Уведомление для пользователя
+                return;
+            }
+
+            // Добавляем каждый выбранный факультет в FormData
+            selectedFaculties.forEach(facultyId => {
+                formData.append('facultyIds', facultyId); // Добавляем ID факультета как отдельный элемент
+            });
+
+            // Логируем данные перед отправкой
+            console.log('Данные формы перед отправкой:', Array.from(formData.entries()));
+
+            try {
+                const response = await fetch('/api/books/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const messageElement = document.getElementById('message'); // Элемент для отображения сообщения
+
+                if (response.ok) {
+                    const message = await response.text(); // Получаем текст ответа
+                    messageElement.textContent = message; // Отображаем сообщение
+                    messageElement.style.color = 'green'; // Устанавливаем цвет текста
+                    event.target.reset(); // Сбрасываем форму после успешной отправки
+                } else {
+                    const errorMessage = await response.text(); // Получаем текст ошибки с сервера
+                    messageElement.textContent = 'Ошибка: ' + errorMessage; // Сообщение об ошибке
+                    messageElement.style.color = 'red'; // Устанавливаем цвет текста
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = 'Ошибка: ' + error.message; // Сообщение об ошибке
+                document.getElementById('message').style.color = 'red'; // Устанавливаем цвет текста
+            }
+        }
+
+        async function loadFaculties() {
+            try {
+                const response = await fetch('/api/faculties');
+                if (response.ok) {
+                    const faculties = await response.json();
+                    const facultyContainer = document.getElementById('facultyContainer');
+
+                    faculties.forEach(faculty => {
+                        const label = document.createElement('label');
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = faculty.facultyId; // Используем ID факультета
+                        checkbox.dataset.isPublic = faculty.isPublic; // Сохраняем информацию о том, является ли факультет общедоступным
+                        checkbox.addEventListener('change', handleFacultyChange);
+
+                        label.appendChild(checkbox);
+                        label.appendChild(document.createTextNode(faculty.type)); // Отображаем тип факультета
+                        facultyContainer.appendChild(label);
+                    });
+                } else {
+                    console.error('Ошибка при загрузке факультетов:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+
+        function handleFacultyChange() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            let hasPublic = false;
+            let hasNonPublic = false;
+
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    if (checkbox.dataset.isPublic === 'true') {
+                        hasPublic = true;
+                    } else {
+                        hasNonPublic = true;
+                    }
+                }
+            });
+
+            // Логика для ограничения выбора
+            if (hasPublic && hasNonPublic) {
+                checkboxes.forEach(checkbox => {
+                    if (checkbox.dataset.isPublic === 'false') {
+                        checkbox.checked = false; // Сбрасываем не общедоступные
+                    }
+                });
+            } else if (hasNonPublic && !hasPublic) {
+                checkboxes.forEach(checkbox => {
+                    if (checkbox.dataset.isPublic === 'true') {
+                        checkbox.checked = false; // Сбрасываем общедоступные
+                    }
+                });
+            }
+        }
+
+        window.onload = () => {
+            loadFaculties(); // Загружаем факультеты при загрузке страницы
+        };
+    </script>
+</head>
+<body>
+<h1>Добавить книгу</h1>
+<div id="message"></div> <!-- Блок для отображения сообщения -->
+<form onsubmit="submitForm(event)" enctype="multipart/form-data">
+    <label for="title">
+        <input type="text" name="title" id="title" placeholder="Название книги" required>
+    </label><br>
+    <label for="isbn">
+        <input type="text" name="isbn" id="isbn" placeholder="ISBN" required>
+    </label><br>
+    <label for="publicationYear">
+        <input type="number" name="publicationYear" id="publicationYear" placeholder="Год публикации" required>
+    </label><br>
+    <label for="description">
+        <textarea name="description" id="description" placeholder="Описание" required></textarea>
+    </label><br>
+    <label for="publisher">
+        <input type="text" name="publisher" id="publisher" placeholder="Издатель" required>
+    </label><br>
+    <label>
+        <input type="text" name="authorFirstName" placeholder="Имя автора" required>
+        <input type="text" name="authorLastName" placeholder="Фамилия автора" required>
+    </label><br>
+    <label for="file">
+        <input type="file" name="file" id="file" required><br>
+    </label>
+
+    <div class="dropdown">
+        <button type="button">Выберите факультеты</button>
+        <div class="dropdown-content" id="facultyContainer">
+            <!-- Факультеты будут загружены сюда -->
+        </div>
+    </div>
+
+    <button type="submit">Добавить книгу</button>
+</form>
+<footer>
+    <p>&copy; 2024 Электронная библиотека</p>
+</footer>
+</body>
+</html>

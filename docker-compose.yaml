@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:latest  # Используем последнюю версию PostgreSQL
+    container_name: library-postgres  # Имя контейнера
+    restart: always
+    environment:
+      POSTGRES_DB: library  # Имя базы данных, которую нужно создать
+      POSTGRES_USER: postgres  # Имя пользователя
+      POSTGRES_PASSWORD: postgres  # Пароль для пользователя
+    ports:
+      - "5432:5432"  # Пробрасываем порт 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Монтируем том для хранения данных
+
+volumes:
+  postgres_data:  # Определяем том для хранения данных

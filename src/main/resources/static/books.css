@@ -1,0 +1,110 @@
+html, body {
+    height: 100%; /* Устанавливаем высоту 100% для html и body */
+    margin: 0; /* Убираем отступы по умолчанию */
+}
+
+body {
+    font-family: 'Arial', sans-serif; /* Основной шрифт */
+    background-image: url('https://fotoblik.ru/wp-content/uploads/2023/09/bumaga-gazetnaia-9.webp');
+    background-size: cover; /* Фон будет покрывать весь экран */
+    background-position: center; /* Центрирование фона */
+    background-repeat: no-repeat; /* Убираем повторение фона */
+    background-attachment: fixed; /* Фиксируем фон при прокрутке */
+    min-height: 100vh; /* Минимальная высота 100% от высоты экрана */
+    padding: 0; /* Убираем отступы */
+    color: #333; /* Цвет текста по умолчанию */
+}
+
+main {
+    max-width: 800px; /* Максимальная ширина контейнера */
+    margin: auto; /* Центрируем контейнер */
+    background: rgba(255, 255, 255, 0.9); /* Полупрозрачный фон */
+    padding: 30px; /* Увеличиваем отступы внутри контейнера */
+    border-radius: 12px; /* Более округленные углы */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Более заметная тень */
+}
+
+h1 {
+    text-align: center; /* Центрирование заголовка */
+    color: #333; /* Цвет заголовка */
+    margin-bottom: 20px; /* Отступ снизу */
+    font-size: 2.5em; /* Размер заголовка */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Тень для заголовка */
+}
+
+.search-container {
+    display: flex; /* Используем flexbox для размещения элементов */
+    justify-content: center; /* Центрирование по горизонтали */
+    margin-bottom: 30px; /* Увеличиваем отступ снизу */
+}
+
+input[type="text"] {
+    padding: 12px; /* Увеличиваем отступы внутри поля */
+    border: 1px solid #ccc; /* Рамка */
+    border-radius: 4px; /* Скругленные углы */
+    width: 70%; /* Ширина поля */
+    margin-right: 10px; /* Отступ справа */
+    transition: border-color 0.3s; /* Плавный переход цвета рамки */
+}
+
+input[type="text"]:focus {
+    border-color: #007BFF; /* Цвет рамки при фокусе */
+    outline: none; /* Убираем обводку */
+}
+
+button {
+    background-color: #007BFF; /* Цвет кнопки */
+    color: white; /* Цвет текста кнопки */
+    border: none; /* Убираем рамку */
+    padding: 12px 20px; /* Увеличиваем отступы внутри кнопки */
+    border-radius: 4px; /* Скругленные углы */
+    cursor: pointer; /* Указатель при наведении */
+    transition: background-color 0.3s; /* Плавный переход цвета */
+}
+
+button:hover {
+    background-color: #0056b3; /* Цвет кнопки при наведении */
+}
+
+#loading {
+    text-align: center; /* Центрирование текста загрузки */
+    margin: 20px 0; /* Отступы сверху и снизу */
+    font-weight: bold; /* Жирный текст */
+}
+
+ul {
+    list-style-type: none; /* Убираем маркеры списка */
+    padding: 0; /* Убираем внутренние отступы */
+}
+
+li {
+    margin: 15px 0; /* Увеличиваем отступы между элементами списка */
+}
+
+a {
+    text-decoration: none; /* Убираем подчеркивание */
+    color: #007BFF; /* Цвет ссылки */
+    transition: color 0.3s; /* Плавный переход цвета */
+}
+
+a:hover {
+    text-decoration: underline; /* Подчеркивание при наведении */
+    color: #0056b3; /* Цвет ссылки при наведении */
+}
+
+/* Медиа-запрос для адаптивности */
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* Уменьшаем отступы на мобильных устройствах */
+    }
+
+    main {
+        padding: 20px; /* Уменьшаем отступы внутри контейнера на мобильных */
+    }
+
+    input[type="text"] {
+        width: 100%; /* Увеличиваем ширину поля на мобильных устройствах */
+        margin-right: 0; /* Убираем отступ справа */
+        margin-bottom: 10px; /* Добавляем отступ снизу */
+    }
+}

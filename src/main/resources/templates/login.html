@@ -1,0 +1,63 @@
+<!-- Измененный код для login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+    <link rel="stylesheet" href="login.css"> <!-- Подключение CSS -->
+</head>
+<body>
+<header>
+    <h1>Авторизация</h1>
+</header>
+<main>
+    <form id="loginForm">
+        <label for="username">Имя пользователя:</label>
+        <input type="text" id="username" name="username" required>
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit" class="button">Войти</button>
+    </form>
+    <p class="register-link">Нет аккаунта? <a href="/register" class="register-button">Зарегистрироваться</a></p>
+</main>
+<script>
+    // Измененный код для login.html
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Предотвращаем стандартное поведение формы
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        // Отправляем данные на сервер
+        fetch('/api/users/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password }) // Убираем роль
+        })
+            .then(response => {
+                if (response.ok) {
+                    return response.json(); // Получаем данные о пользователе
+                } else {
+                    alert('Неверное имя пользователя или пароль.');
+                    throw new Error('Ошибка при входе');
+                }
+            })
+            .then(data => {
+                const roles = data.roles; // Получаем роли из ответа
+                // Перенаправляем на страницу выбора действий
+                window.location.href = `/actions?roles=${roles.join(',')}`; // Передаем роли в URL
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при попытке войти.');
+            });
+    });
+</script>
+<footer>
+    <p>&copy; 2024 Электронная библиотека</p>
+</footer>
+</body>
+</html>

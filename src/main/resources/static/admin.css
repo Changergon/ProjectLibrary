@@ -1,0 +1,126 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-image: url('https://fotoblik.ru/wp-content/uploads/2023/09/stol-v-biblioteke-2.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed; /* Фиксированный фон */
+    margin: 0;
+    padding: 80px 20px; /* Уменьшено паддинг для лучшего отображения на мобильных устройствах */
+    height: 100vh; /* Высота на весь экран */
+    display: flex; /* Используем flex для центрирования содержимого */
+    flex-direction: column; /* Вертикальное направление */
+    justify-content: center; /* Центрируем содержимое по вертикали */
+}
+
+main {
+    max-width: 800px;
+    margin: auto;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 30px; /* Увеличен паддинг для лучшего восприятия */
+    border-radius: 12px; /* Увеличен радиус скругления */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 28px; /* Увеличен размер заголовка */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+}
+
+th {
+    background-color: #007BFF;
+    color: white;
+    font-weight: bold; /* Сделать шрифт жирным */
+}
+
+tr:hover {
+    background-color: #f1f1f1; /* Цвет фона при наведении на строку */
+}
+
+button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 12px 15px; /* Увеличен паддинг для кнопок */
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px; /* Увеличен размер шрифта кнопки */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Плавный переход для фона и эффекта нажатия */
+}
+
+button:hover {
+    background-color: #0056b3; /* Цвет кнопки при наведении */
+    transform: translateY(-2px); /* Эффект поднятия кнопки при наведении */
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: normal; /* Уменьшен вес шрифта меток */
+}
+
+.faculty-select {
+    display: flex;
+    flex-wrap: wrap; /* Позволяет элементам переноситься на новую строку */
+    margin-top: 10px; /* Отступ сверху для факультетов */
+}
+
+.faculty-option {
+    padding: 8px;
+    margin: 5px;
+    cursor: pointer;
+    background-color: #fff; /* Цвет по умолчанию для факультетов */
+    border: 1px solid #ccc; /* Граница для факультетов */
+    border-radius: 4px; /* Скругление углов */
+    transition: background-color 0.3s ease, border-color 0.3s ease; /* Плавный переход для фона и границы */
+}
+
+.faculty-option:hover {
+    background-color: #d0e0ff; /* Цвет фона при наведении на факультет */
+    border-color: #007BFF; /* Цвет границы при наведении */
+}
+
+#saveRolesButton {
+    margin-top: 20px;
+}
+
+footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px; /* Размер шрифта для футера */
+    color: #555; /* Цвет текста футера */
+}
+
+/* Адаптивные стили */
+@media (max-width: 600px) {
+    body {
+        padding: 40px 10px; /* Уменьшение паддинга на мобильных устройствах */
+    }
+
+    main {
+        padding: 20px; /* Уменьшение паддинга в главном блоке */
+    }
+
+    h1 {
+        font-size: 24px; /* Уменьшение размера заголовка на мобильных устройствах */
+    }
+
+    button {
+        padding: 10px; /* Уменьшение паддинга для кнопок на мобильных устройствах */
+    }
+}

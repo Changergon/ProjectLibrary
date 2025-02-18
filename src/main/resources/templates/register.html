@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="register.css"> <!-- Подключение CSS -->
+</head>
+<body>
+<header>
+    <h1>Регистрация</h1>
+</header>
+<main>
+    <form id="registerForm">
+        <label for="username">Имя пользователя:</label>
+        <input type="text" id="username" name="username" required>
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password" required>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        <button type="submit" class="button">Зарегистрироваться</button>
+    </form>
+    <p class="register-link">Уже есть аккаунт? <a href="/login" class="register-button">Войти</a></p>
+</main>
+<script>
+        // Функция для получения значения cookie по имени
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Предотвращаем стандартное поведение формы
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+
+            const response = await fetch('/api/users/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password, email })
+            });
+
+            console.log('Статус ответа:', response.status); // Логируем статус ответа
+
+            if (response.ok) {
+                const message = await response.text();
+                alert(message);
+                console.log('Регистрация прошла успешно, перенаправление на /login');
+                window.location.href = '/login'; // Попробуйте временно закомментировать эту строку
+            } else {
+                const errorMessage = await response.text();
+                console.error('Ошибка:', errorMessage);
+                errorMessageElement.innerText = 'Ошибка при регистрации: ' + errorMessage;
+            }
+        });
+    </script>
+</main>
+<footer>
+    <p>&copy; 2024 Электронная библиотека</p>
+</footer>
+</body>
+</html>
