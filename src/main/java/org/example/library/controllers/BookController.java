@@ -164,7 +164,7 @@ public class BookController {
         }
 
         try {
-            String directory = "C:\\Users\\Дмитрий\\Desktop\\ProjectLibrary\\src\\main\\resources\\Storage";
+            String directory = "C:\\Users\\Дмитрий\\IdeaProjects\\ProjectLibrary\\src\\main\\resources\\Storage";
             File dir = new File(directory);
 
             // Создаем директорию, если она не существует
