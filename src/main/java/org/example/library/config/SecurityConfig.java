@@ -26,8 +26,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/register", "/api/users/login", "/", "/register", "/login").permitAll()
                         .requestMatchers("/styles.css", "/*.css").permitAll() // Разрешить доступ ко всем CSS-файлам
                         .requestMatchers("/api/books/user/**").authenticated() // Разрешить доступ к books только для авторизованных пользователей
-                        .requestMatchers("/api/admin/**","/books/edit").hasRole("ADMIN")
-                        .requestMatchers("/api/teacher/**","/books/edit").hasRole("TEACHER")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+                        .requestMatchers("/books/edit").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/student/**").hasRole("STUDENT")
                         .anyRequest().authenticated()
                 )
