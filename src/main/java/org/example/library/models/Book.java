@@ -84,4 +84,6 @@ public class Book {
                 ", authorsCount=" + (bookAuthors != null ? bookAuthors.size() : 0) + // Указываем только количество авторов
                 '}';
     }
+
+
 }

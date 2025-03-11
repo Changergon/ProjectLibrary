@@ -7,52 +7,86 @@
     <link rel="stylesheet" href="/books.css"> <!-- Подключение CSS -->
 </head>
 <body>
+<div id="navbar"></div>
 <header>
     <h1>Список книг</h1>
-    <p><span id="currentUser Name"></span><span id="currentUser Id"></span></p>
+    <p>Пользователь: <span id="currentUserName"></span> ID: <span id="currentUserId"></span></p>
 </header>
 <main>
     <div class="search-container">
-        <label for="searchInput"></label><input type="text" id="searchInput" placeholder="Поиск книг...">
+        <label for="searchTitle"></label><input type="text" id="searchTitle" placeholder="Поиск по названию...">
+        <label for="searchAuthor"></label><input type="text" id="searchAuthor" placeholder="Поиск по автору...">
         <button id="searchButton">Поиск</button>
     </div>
     <div id="loading" style="display:none;">Загрузка книг...</div>
     <ul id="bookList">
         <!-- Книги будут загружены сюда через JavaScript -->
     </ul>
+    <div id="pagination">
+        <button id="prevPage">Предыдущая</button>
+        <span id="currentPage">1</span>
+        <button id="nextPage">Следующая</button>
+    </div>
     <script>
-        async function displayAllBooks() {
-            const bookList = document.getElementById('bookList');
-            const loadingIndicator = document.getElementById('loading');
+        let currentPage = 1;
+        const pageSize = 10;
 
-            loadingIndicator.style.display = 'block';
+        async function displayAllBooks(page = 1) {
+            const bookList = document.getElementById('bookList');
             bookList.innerHTML = '';
 
-            const books = await fetchAllBooks();
-            loadingIndicator.style.display = 'none';
+            try {
+                const response = await fetch(`/api/books/all?page=${page - 1}&size=${pageSize}`);
+                if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.statusText}`);
+                }
+                const data = await response.json();
+                const books = data.content; // Предполагаем, что книги находятся в поле "content"
 
-            if (!books) {
+                console.log("Полученные книги:", books); // Отладочный вывод
+
+                if (books.length > 0) {
+                    books.forEach(book => {
+                        const listItem = document.createElement('li');
+                        const bookLink = document.createElement('a');
+                        bookLink.textContent = `${book.title} - ${book.authorNames.join(', ')}`;
+                        bookLink.href = `/books/read?id=${book.bookId}`;
+                        listItem.appendChild(bookLink);
+                        bookList.appendChild(listItem);
+
+                        console.log("Добавлена книга:", book.title); // Отладочный вывод
+                    });
+                } else {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = 'Книги не найдены.';
+                    bookList.appendChild(listItem);
+                }
+            } catch (error) {
+                console.error("Ошибка при загрузке книг:", error);
                 const listItem = document.createElement('li');
                 listItem.textContent = 'Ошибка при загрузке книг.';
                 bookList.appendChild(listItem);
-                return;
             }
 
-            if (books.length > 0) {
-                books.forEach(book => {
-                    const listItem = document.createElement('li');
-                    const bookLink = document.createElement('a');
-                    bookLink.textContent = `${book.title} - ${book.authorNames.join(', ')}`;
-                    bookLink.href = `/books/read?id=${book.bookId}`;
-                    listItem.appendChild(bookLink);
-                    bookList.appendChild(listItem);
-                });
-            } else {
-                const listItem = document.createElement('li');
-                listItem.textContent = 'Книги не найдены.';
-                bookList.appendChild(listItem);
-            }
+            document.getElementById('currentPage').textContent = page;
         }
+
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayAllBooks(currentPage);
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            currentPage++;
+            displayAllBooks(currentPage);
+        });
+
+        window.onload = async function() {
+            await fetchCurrentUser();
+            await displayAllBooks(currentPage);
+        };
 
         async function fetchAllBooks() {
             try {
@@ -61,8 +95,7 @@
                     const errorMessage = await response.text();
                     throw new Error(`Ошибка при загрузке книг: ${response.status} - ${errorMessage}`);
                 }
-                const books = await response.json();
-                return books;
+                return await response.json();
             } catch (error) {
                 console.error(error);
                 alert('Ошибка: ' + error.message);
@@ -85,21 +118,31 @@
             }
         }
 
-        async function searchBooks(searchValue) {
+        document.getElementById('searchButton').addEventListener('click', async () => {
+            const title = document.getElementById('searchTitle').value;
+            const author = document.getElementById('searchAuthor').value;
+            await searchBooks(title, author);
+        });
+
+        async function searchBooks(title, author) {
             const bookList = document.getElementById('bookList');
-            bookList.innerHTML = ''; // Очищаем текущий список книг
+            bookList.innerHTML = '';
 
-            const books = await fetchAllBooks(); // Загружаем все книги
-            if (books) {
-                const filteredBooks = books.filter(book =>
-                    book.title.toLowerCase().includes(searchValue.toLowerCase())
-                );
+            try {
+                const response = await fetch(`/api/books/search?title=${title || ''}&author=${author || ''}`);
+                if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.statusText}`);
+                }
+                const books = await response.json();
 
-                if (filteredBooks.length > 0) {
-                    filteredBooks.forEach(book => {
+                console.log("Результаты поиска:", books); // Отладочный вывод
+
+                if (books.length > 0) {
+                    books.forEach(book => {
                         const listItem = document.createElement('li');
                         const bookLink = document.createElement('a');
-                        bookLink.textContent = `${book.title} - ${book.authorNames.join(', ')}`;
+                        const authorNames = book.authorNames ? book.authorNames.join(', ') : 'Автор неизвестен';
+                        bookLink.textContent = `${book.title} - ${authorNames}`;
                         bookLink.href = `/books/read?id=${book.bookId}`;
                         listItem.appendChild(bookLink);
                         bookList.appendChild(listItem);
@@ -109,6 +152,11 @@
                     listItem.textContent = 'Книги не найдены по вашему запросу.';
                     bookList.appendChild(listItem);
                 }
+            } catch (error) {
+                console.error("Ошибка при поиске книг:", error);
+                const listItem = document.createElement('li');
+                listItem.textContent = 'Ошибка при поиске книг.';
+                bookList.appendChild(listItem);
             }
         }
 
@@ -151,6 +199,12 @@
                 await searchBooks(searchValue); // Используем новый метод поиска
             }
         });
+
+        fetch('/navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar').innerHTML = data;
+            });
     </script>
 </main>
 </body>

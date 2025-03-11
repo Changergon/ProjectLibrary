@@ -5,6 +5,7 @@ import org.example.library.models.*;
 import org.example.library.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -44,19 +45,33 @@ public class BookController {
 
     // Получение всех книг
     @GetMapping("/all")
-    public ResponseEntity<List<BookDTO>> getAllBooks(Authentication authentication) {
-        LibraryUser currentUser = userService.findByUsername(authentication.getName());
-        List<Book> books = bookService.getBooksForUser(currentUser); // Получаем книги для текущего пользователя
-        List<BookDTO> bookDTOs = books.stream().map(this::convertToDTO).collect(Collectors.toList());
+    public ResponseEntity<Page<BookDTO>> getAllBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Book> books = bookService.getAllBooks(page, size); // Получаем страницу книг
+        Page<BookDTO> bookDTOs = books.map(this::convertToDTO); // Преобразуем в DTO
         return ResponseEntity.ok(bookDTOs);
     }
 
 
-    // Поиск книг по заголовку
+    // Поиск книг
     @GetMapping("/search")
-    public ResponseEntity<List<BookDTO>> searchBooks(@RequestParam String title) {
-        List<Book> books = bookService.searchBooks(title);
-        List<BookDTO> bookDTOs = books.stream().map(this::convertToDTO).collect(Collectors.toList());
+    public ResponseEntity<Page<BookDTO>> searchBooks(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Book> books;
+        if (title != null && author != null) {
+            books = bookService.searchBooksByTitleAndAuthor(title, author, page, size);
+        } else if (title != null) {
+            books = bookService.searchBooksByTitle(title, page, size);
+        } else if (author != null) {
+            books = bookService.searchBooksByAuthor(author, page, size);
+        } else {
+            books = bookService.getAllBooks(page, size); // Используем пагинацию
+        }
+        Page<BookDTO> bookDTOs = books.map(this::convertToDTO);
         return ResponseEntity.ok(bookDTOs);
     }
 
@@ -234,7 +249,7 @@ public class BookController {
                 book.getPublicationYear(),
                 book.getDescription(),
                 book.getPublisher(),
-                book.getStatus().name(), // Преобразуем статус в строку
+                book.getStatus().name(),
                 authorNames
         );
     }

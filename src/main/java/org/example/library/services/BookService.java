@@ -8,6 +8,9 @@ import org.example.library.repositories.BookEntryRepository; // Импортир
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,9 +33,19 @@ public class BookService {
     @Autowired
     private FacultyService facultyService; // Внедряем FacultyService
 
-    public List<Book> searchBooks(String title) {
-        logger.info("Searching for books with title containing: {}", title);
-        return bookRepository.findByTitleContaining(title);
+    public Page<Book> searchBooksByTitleAndAuthor(String title, String author, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByTitleContainingAndBookAuthors_Author_LastNameContaining(title, author, pageable);
+    }
+
+    public Page<Book> searchBooksByTitle(String title, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByTitleContaining(title, pageable);
+    }
+
+    public Page<Book> searchBooksByAuthor(String author, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByBookAuthors_Author_LastNameContaining(author, pageable);
     }
 
     public Book getBookById(Long bookId) {
@@ -84,9 +97,9 @@ public class BookService {
         ebookRepository.save(ebook);
     }
 
-    public List<Book> getAllBooks() {
-        logger.info("Fetching all books");
-        return bookRepository.findAll();
+    public Page<Book> getAllBooks(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size); // Создаем объект Pageable
+        return bookRepository.findAll(pageable); // Используем пагинацию в репозитории
     }
 
     public List<Book> getBooksByFaculty(Faculty faculty) {
@@ -107,7 +120,6 @@ public class BookService {
         }
     }
 
-    // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\services\BookService.java
 
     public boolean isBookAddedByUser (Long bookId, String username) {
         Book book = getBookById(bookId);
