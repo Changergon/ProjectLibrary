@@ -38,7 +38,6 @@ public class BookService {
         return bookRepository.findByTitleContainingAndBookAuthors_Author_LastNameContaining(title, author, pageable);
     }
 
-
     public Page<Book> searchBooksByTitle(String title, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return bookRepository.findByTitleContaining(title, pageable);

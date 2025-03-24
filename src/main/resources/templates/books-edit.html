@@ -24,18 +24,21 @@
 </footer>
 <script>
     async function loadBooks() {
-        const response = await fetch('/api/books/all'); // Запрос на получение всех книг
-        const books = await response.json();
+        const page = 0; // Номер страницы по умолчанию
+        const size = 10; // Размер страницы по умолчанию
+        const response = await fetch(`/api/books/all?page=${page}&size=${size}`); // Запрос на получение всех книг
+        const data = await response.json();
+        const books = data.content; // Получаем массив книг из объекта Page<BookDTO>
         const tableBody = document.getElementById('booksTableBody');
 
         books.forEach(book => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${book.title}</td>
-                <td>
-                    <a href="/books/edit?id=${book.bookId}">Редактировать</a>
-                </td>
-            `;
+            <td>${book.title}</td>
+            <td>
+                <a href="/books/edit?id=${book.bookId}">Редактировать</a>
+            </td>
+        `;
             tableBody.appendChild(row);
         });
     }
