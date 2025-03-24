@@ -302,13 +302,13 @@ public class BookController {
             @RequestParam List<Long> facultyIds,
             Authentication authentication) {
 
-        LibraryUser  currentUser  = userService.findByUsername(authentication.getName());
+        LibraryUser currentUser = userService.findByUsername(authentication.getName());
 
-        if (currentUser  == null) {
+        if (currentUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не найден.");
         }
 
-        boolean isAuthorized = currentUser .getRoles().stream()
+        boolean isAuthorized = currentUser.getRoles().stream()
                 .anyMatch(role -> role.getRoleName().equals("TEACHER") || role.getRoleName().equals("ADMIN"));
 
         if (!isAuthorized) {
@@ -349,6 +349,12 @@ public class BookController {
             authorService.saveAuthor(author);
         }
 
+        // Обновление связей BookAuthor
+        for (BookAuthor bookAuthor : book.getBookAuthors()) {
+            bookAuthor.setAuthor(author);
+        }
+
+
         // Обновление факультетов
         Set<Faculty> faculties = facultyIds.stream()
                 .map(facultyService::findById)
@@ -364,7 +370,5 @@ public class BookController {
 
         return ResponseEntity.ok("Книга успешно обновлена!");
     }
-
-
 
 }
