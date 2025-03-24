@@ -7,15 +7,16 @@
     <link rel="stylesheet" href="/books.css"> <!-- Подключение CSS -->
 </head>
 <body>
-<div id="navbar"></div>
 <header>
     <h1>Список книг</h1>
-    <p>Пользователь: <span id="currentUserName"></span> ID: <span id="currentUserId"></span></p>
+    <p>Пользователь: <span id="currentUser Name"></span> ID: <span id="currentUser Id"></span></p>
 </header>
 <main>
     <div class="search-container">
-        <label for="searchTitle"></label><input type="text" id="searchTitle" placeholder="Поиск по названию...">
-        <label for="searchAuthor"></label><input type="text" id="searchAuthor" placeholder="Поиск по автору...">
+        <label for="searchTitle"></label>
+        <input type="text" id="searchTitle" placeholder="Поиск по названию...">
+        <label for="searchAuthor"></label>
+        <input type="text" id="searchAuthor" placeholder="Поиск по автору...">
         <button id="searchButton">Поиск</button>
     </div>
     <div id="loading" style="display:none;">Загрузка книг...</div>
@@ -53,7 +54,6 @@
                         bookLink.href = `/books/read?id=${book.bookId}`;
                         listItem.appendChild(bookLink);
                         bookList.appendChild(listItem);
-
                         console.log("Добавлена книга:", book.title); // Отладочный вывод
                     });
                 } else {
@@ -83,33 +83,13 @@
             displayAllBooks(currentPage);
         });
 
-        window.onload = async function() {
-            await fetchCurrentUser();
-            await displayAllBooks(currentPage);
-        };
-
-        async function fetchAllBooks() {
-            try {
-                const response = await fetch('/api/books/all'); // Измените на правильный маршрут
-                if (!response.ok) {
-                    const errorMessage = await response.text();
-                    throw new Error(`Ошибка при загрузке книг: ${response.status} - ${errorMessage}`);
-                }
-                return await response.json();
-            } catch (error) {
-                console.error(error);
-                alert('Ошибка: ' + error.message);
-                return null;
-            }
-        }
-
         async function fetchCurrentUser () {
             try {
                 const response = await fetch('/api/users/current');
                 if (response.ok) {
                     const user = await response.json();
-                    document.getElementById('currentUserName').textContent = user.username; // Отображение имени пользователя
-                    document.getElementById('currentUserId').textContent = user.userId; // Отображение ID пользователя
+                    document.getElementById('currentUser Name').textContent = user.username; // Отображение имени пользователя
+                    document.getElementById('currentUser Id').textContent = user.userId; // Отображение ID пользователя
                 } else {
                     console.error("Ошибка при получении текущего пользователя:", response.statusText);
                 }
@@ -137,8 +117,8 @@
 
                 console.log("Результаты поиска:", books); // Отладочный вывод
 
-                if (books.length > 0) {
-                    books.forEach(book => {
+                if (books.content.length > 0) {
+                    books.content.forEach(book => {
                         const listItem = document.createElement('li');
                         const bookLink = document.createElement('a');
                         const authorNames = book.authorNames ? book.authorNames.join(', ') : 'Автор неизвестен';
@@ -181,30 +161,17 @@
             }
         }
 
-        // Вызов функции проверки сессии при загрузке страницы
+        // Вызов функции проверки сессии и загрузки данных при загрузке страницы
         window.onload = async function() {
             await checkSession(); // Проверяем сессию
             await fetchCurrentUser (); // Получаем текущего пользователя
-            await displayAllBooks(); // Загружаем все книги
+            await displayAllBooks(currentPage); // Загружаем все книги
+            fetch('/navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar').innerHTML = data;
+                });
         };
-
-        document.getElementById('searchButton').addEventListener('click', async () => {
-            const searchValue = document.getElementById('searchInput').value;
-            await searchBooks(searchValue); // Используем новый метод поиска
-        });
-
-        document.getElementById('searchInput').addEventListener('keypress', async (event) => {
-            if (event.key === 'Enter') {
-                const searchValue = document.getElementById('searchInput').value;
-                await searchBooks(searchValue); // Используем новый метод поиска
-            }
-        });
-
-        fetch('/navbar.html')
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('navbar').innerHTML = data;
-            });
     </script>
 </main>
 </body>

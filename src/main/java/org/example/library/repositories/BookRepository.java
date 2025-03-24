@@ -15,7 +15,10 @@ import java.util.Set;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
+    @Query("SELECT b FROM Book b JOIN b.bookAuthors ba JOIN ba.author a WHERE b.title LIKE %:title% AND a.lastName LIKE %:author%")
     Page<Book> findByTitleContainingAndBookAuthors_Author_LastNameContaining(String title, String author, Pageable pageable);
+
+
     Page<Book> findByTitleContaining(String title, Pageable pageable);
     Page<Book> findByBookAuthors_Author_LastNameContaining(String author, Pageable pageable);
     // Метод для получения списка выданных книг

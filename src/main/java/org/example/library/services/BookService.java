@@ -38,6 +38,7 @@ public class BookService {
         return bookRepository.findByTitleContainingAndBookAuthors_Author_LastNameContaining(title, author, pageable);
     }
 
+
     public Page<Book> searchBooksByTitle(String title, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return bookRepository.findByTitleContaining(title, pageable);
@@ -128,9 +129,9 @@ public class BookService {
 
     // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\services\BookService.java
 
-    public Book updateBook(Book book) {
+    public void updateBook(Book book) {
         // Здесь вы можете добавить логику для проверки, является ли пользователь преподавателем и добавил ли он эту книгу
-        return bookRepository.save(book); // Сохраняем обновленную книгу
+        bookRepository.save(book);
     }
 
     public List<Book> getBooksByUserId(Long userId) {
