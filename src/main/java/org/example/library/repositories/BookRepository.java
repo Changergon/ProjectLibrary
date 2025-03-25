@@ -18,6 +18,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query("SELECT b FROM Book b JOIN b.bookAuthors ba JOIN ba.author a WHERE b.title LIKE %:title% AND a.lastName LIKE %:author%")
     Page<Book> findByTitleContainingAndBookAuthors_Author_LastNameContaining(String title, String author, Pageable pageable);
 
+    @Query("SELECT b FROM Book b JOIN b.bookAuthors ba JOIN ba.author a WHERE b.title LIKE %:query% OR a.firstName LIKE %:query% OR a.lastName LIKE %:query%")
+    Page<Book> findByTitleContainingOrBookAuthors_Author_FirstNameContainingOrBookAuthors_Author_LastNameContaining(String query, Pageable pageable);
 
     Page<Book> findByTitleContaining(String title, Pageable pageable);
     Page<Book> findByBookAuthors_Author_LastNameContaining(String author, Pageable pageable);

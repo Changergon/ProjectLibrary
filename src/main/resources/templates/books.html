@@ -13,12 +13,11 @@
 </header>
 <main>
     <div class="search-container">
-        <label for="searchTitle"></label>
-        <input type="text" id="searchTitle" placeholder="Поиск по названию...">
-        <label for="searchAuthor"></label>
-        <input type="text" id="searchAuthor" placeholder="Поиск по автору...">
+        <label for="searchQuery"></label>
+        <input type="text" id="searchQuery" placeholder="Поиск по названию или автору...">
         <button id="searchButton">Поиск</button>
     </div>
+
     <div id="loading" style="display:none;">Загрузка книг...</div>
     <ul id="bookList">
         <!-- Книги будут загружены сюда через JavaScript -->
@@ -99,30 +98,26 @@
         }
 
         document.getElementById('searchButton').addEventListener('click', async () => {
-            const title = document.getElementById('searchTitle').value;
-            const author = document.getElementById('searchAuthor').value;
-            await searchBooks(title, author);
+            const query = document.getElementById('searchQuery').value; // Используем одно поле
+            await searchBooks(query);
         });
 
-        async function searchBooks(title, author) {
+        async function searchBooks(query) {
             const bookList = document.getElementById('bookList');
             bookList.innerHTML = '';
 
             try {
-                const response = await fetch(`/api/books/search?title=${title || ''}&author=${author || ''}`);
+                const response = await fetch(`/api/books/search?query=${encodeURIComponent(query)}`);
                 if (!response.ok) {
                     throw new Error(`Ошибка: ${response.statusText}`);
                 }
                 const books = await response.json();
 
-                console.log("Результаты поиска:", books); // Отладочный вывод
-
                 if (books.content.length > 0) {
                     books.content.forEach(book => {
                         const listItem = document.createElement('li');
                         const bookLink = document.createElement('a');
-                        const authorNames = book.authorNames ? book.authorNames.join(', ') : 'Автор неизвестен';
-                        bookLink.textContent = `${book.title} - ${authorNames}`;
+                        bookLink.textContent = `${book.title} - ${book.authorNames.join(', ')}`;
                         bookLink.href = `/books/read?id=${book.bookId}`;
                         listItem.appendChild(bookLink);
                         bookList.appendChild(listItem);
@@ -139,6 +134,7 @@
                 bookList.appendChild(listItem);
             }
         }
+
 
         async function checkSession() {
             try {

@@ -57,23 +57,21 @@ public class BookController {
     // Поиск книг
     @GetMapping("/search")
     public ResponseEntity<Page<BookDTO>> searchBooks(
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Page<Book> books;
-        if (title != null && author != null) {
-            books = bookService.searchBooksByTitleAndAuthor(title, author, page, size);
-        } else if (title != null) {
-            books = bookService.searchBooksByTitle(title, page, size);
-        } else if (author != null) {
-            books = bookService.searchBooksByAuthor(author, page, size);
+
+        if (query != null && !query.isEmpty()) {
+            books = bookService.searchBooks(query, page, size);
         } else {
-            books = bookService.getAllBooks(page, size); // Используем пагинацию
+            books = bookService.getAllBooks(page, size);
         }
         Page<BookDTO> bookDTOs = books.map(this::convertToDTO);
         return ResponseEntity.ok(bookDTOs);
     }
+
+
 
     // Получение книги по ID
     @GetMapping("/{id}")

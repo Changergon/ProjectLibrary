@@ -48,6 +48,13 @@ public class BookService {
         return bookRepository.findByBookAuthors_Author_LastNameContaining(author, pageable);
     }
 
+    public Page<Book> searchBooks(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByTitleContainingOrBookAuthors_Author_FirstNameContainingOrBookAuthors_Author_LastNameContaining(query, pageable);
+    }
+
+
+
     public Book getBookById(Long bookId) {
         logger.info("Fetching book with ID: {}", bookId);
         return bookRepository.findById(bookId)
