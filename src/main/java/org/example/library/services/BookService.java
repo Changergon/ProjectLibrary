@@ -14,7 +14,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class BookService {
@@ -115,23 +119,37 @@ public class BookService {
         return bookRepository.findByFaculty(faculty);
     }
 
-    public List<Book> getBooksForUser (LibraryUser  user) {
+    public List<Book> getBooksForUser(LibraryUser user) {
         logger.info("Fetching books for user: {}", user.getUsername());
-        logger.info("User  faculties: {}", user.getFaculties());
+        logger.info("User faculties: {}", user.getFaculties());
 
+        Set<Faculty> userFaculties = user.getFaculties();
 
+        // Разделяем факультеты на обычные и общедоступные
+        Set<Faculty> regularFaculties = userFaculties.stream()
+                .filter(f -> f.getType() != FacultyType.COMMON)
+                .collect(Collectors.toSet());
 
-        // Если у пользователя нет факультетов, возвращаем только общедоступные книги
-        if (user.getFaculties().isEmpty()) {
-            logger.info("User  has no faculties, fetching common books");
-            return bookRepository.findByFacultiesType(FacultyType.COMMON);
-        } else {
-            logger.info("Fetching books for faculties: {}", user.getFaculties());
-            // Возвращаем книги, связанные с факультетами пользователя
-            return bookRepository.findByFacultiesIn(user.getFaculties());
+        boolean hasCommonFaculty = userFaculties.stream()
+                .anyMatch(f -> f.getType() == FacultyType.COMMON);
+
+        List<Book> books = new ArrayList<>();
+
+        // Получаем книги для обычных факультетов
+        if (!regularFaculties.isEmpty()) {
+            books.addAll(bookRepository.findByFacultiesIn(regularFaculties));
         }
-    }
 
+        // Добавляем общедоступные книги, если нужно
+        if (hasCommonFaculty) {
+            books.addAll(bookRepository.findCommonBooks());
+        }
+
+        // Удаляем дубликаты
+        return books.stream()
+                .distinct()
+                .collect(Collectors.toList());
+    }
 
 
     public boolean isBookAddedByUser (Long bookId, String username) {

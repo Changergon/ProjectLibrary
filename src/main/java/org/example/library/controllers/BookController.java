@@ -6,6 +6,9 @@ import org.example.library.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -253,26 +256,29 @@ public class BookController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<BookDTO>> getBooksForUser(@PathVariable Long userId) {
-        System.out.println("Полученный userId: " + userId);
+    public ResponseEntity<Page<BookDTO>> getBooksForUser(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-        if (userId <= 0) {
-            return ResponseEntity.badRequest().body(Collections.emptyList()); // Неверный userId
+        LibraryUser user = userService.findById(userId);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
         }
 
-        LibraryUser currentUser = userService.findById(userId);
-        if (currentUser == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
-        }
+        List<Book> books = bookService.getBooksForUser(user);
 
-        try {
-            List<Book> books = bookService.getBooksForUser(currentUser);
-            List<BookDTO> bookDTOs = books.stream().map(this::convertToDTO).collect(Collectors.toList());
-            return ResponseEntity.ok(bookDTOs);
-        } catch (Exception e) {
-            // Логируем ошибку (например, через Logger)
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
-        }
+        // Пагинация
+        int start = (int) PageRequest.of(page, size).getOffset();
+        int end = Math.min((start + size), books.size());
+        Page<Book> bookPage = new PageImpl<>(
+                books.subList(start, end),
+                PageRequest.of(page, size),
+                books.size()
+        );
+
+        Page<BookDTO> bookDTOs = bookPage.map(this::convertToDTO);
+        return ResponseEntity.ok(bookDTOs);
     }
 
 
