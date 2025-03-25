@@ -3,6 +3,7 @@ package org.example.library.controllers;
 import org.example.library.models.Book;
 import org.example.library.models.DTO.UserDTO;
 import org.example.library.models.DTO.UserRoleUpdateDTO;
+import org.example.library.models.FacultyType;
 import org.example.library.models.LibraryUser ;
 import org.example.library.services.AdminService;
 import org.example.library.services.BookService; // Импортируйте BookService
@@ -15,7 +16,10 @@ import org.springframework.web.bind.annotation.*;
 import org.example.library.models.Role; // Добавьте этот импорт
 
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -43,13 +47,21 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    private Long getFacultyId(FacultyType facultyType) {
+        return switch (facultyType) {
+            case SCIENCE -> 1L;
+            case ARTS -> 2L;
+            case ENGINEERING -> 3L;
+            case BUSINESS -> 4L;
+            case COMMON -> 5L;
+            default -> throw new IllegalArgumentException("Unknown faculty type: " + facultyType);
+        };
+    }
+
+
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users")
-    public ResponseEntity<List<UserDTO>> getAllUsers() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("Authenticated user: " + authentication.getName());
-        System.out.println("Authorities: " + authentication.getAuthorities());
-
+    public ResponseEntity<Map<String, Object>> getAllUsers() {
         List<LibraryUser > users = adminService.getAllUsers();
 
         // Преобразование LibraryUser  в UserDTO
@@ -59,16 +71,41 @@ public class AdminController {
                     dto.setUserId(user.getUserId());
                     dto.setUsername(user.getUsername());
                     dto.setEmail(user.getEmail());
-                    // Преобразуйте роли в список строк
                     dto.setRoles(user.getRoles().stream()
-                            .map(Role::getRoleName) // Получаем имя роли
+                            .map(Role::getRoleName)
+                            .collect(Collectors.toList()));
+                    // Получаем только факультеты, связанные с пользователем
+                    dto.setFaculties(user.getFaculties().stream()
+                            .map(faculty -> {
+                                Map<String, Object> facultyMap = new HashMap<>();
+                                facultyMap.put("facultyId", faculty.getFacultyId());
+                                facultyMap.put("type", faculty.getType().getDisplayName());
+                                return facultyMap;
+                            })
                             .collect(Collectors.toList()));
                     return dto;
                 })
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(userDTOs);
+        // Получение списка всех факультетов
+        List<Map<String, Object>> faculties = Arrays.stream(FacultyType.values())
+                .map(facultyType -> {
+                    Map<String, Object> facultyMap = new HashMap<>();
+                    facultyMap.put("facultyId", getFacultyId(facultyType));
+                    facultyMap.put("type", facultyType.getDisplayName());
+                    return facultyMap;
+                })
+                .collect(Collectors.toList());
+
+        // Создание ответа
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", userDTOs);
+        response.put("faculties", faculties);
+
+        return ResponseEntity.ok(response);
     }
+
+
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/assign-faculty/{userId}/{facultyId}")
