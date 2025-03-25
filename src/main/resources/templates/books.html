@@ -162,11 +162,6 @@
             await checkSession(); // Проверяем сессию
             await fetchCurrentUser (); // Получаем текущего пользователя
             await displayAllBooks(currentPage); // Загружаем все книги
-            fetch('/navbar.html')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('navbar').innerHTML = data;
-                });
         };
     </script>
 </main>

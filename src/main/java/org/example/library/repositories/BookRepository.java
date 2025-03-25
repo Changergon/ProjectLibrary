@@ -39,6 +39,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query("SELECT b FROM Book b JOIN b.faculties f WHERE f IN :faculties")
     List<Book> findByFacultiesIn(Set<Faculty> faculties);
 
+
     // Метод для получения книг, добавленных конкретным пользователем через BookEntry
     @Query("SELECT be.book FROM BookEntry be WHERE be.addedBy.userId = :userId")
     List<Book> findByAddedById(Long userId);

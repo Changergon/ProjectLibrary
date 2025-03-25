@@ -49,11 +49,11 @@ public class AdminController {
 
     private Long getFacultyId(FacultyType facultyType) {
         return switch (facultyType) {
-            case SCIENCE -> 1L;
-            case ARTS -> 2L;
+            case SCIENCE -> 5L;
+            case ARTS -> 4L;
             case ENGINEERING -> 3L;
-            case BUSINESS -> 4L;
-            case COMMON -> 5L;
+            case BUSINESS -> 2L;
+            case COMMON -> 1L;
             default -> throw new IllegalArgumentException("Unknown faculty type: " + facultyType);
         };
     }

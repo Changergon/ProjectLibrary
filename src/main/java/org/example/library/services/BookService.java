@@ -117,15 +117,21 @@ public class BookService {
 
     public List<Book> getBooksForUser (LibraryUser  user) {
         logger.info("Fetching books for user: {}", user.getUsername());
+        logger.info("User  faculties: {}", user.getFaculties());
 
+
+
+        // Если у пользователя нет факультетов, возвращаем только общедоступные книги
         if (user.getFaculties().isEmpty()) {
             logger.info("User  has no faculties, fetching common books");
             return bookRepository.findByFacultiesType(FacultyType.COMMON);
         } else {
             logger.info("Fetching books for faculties: {}", user.getFaculties());
+            // Возвращаем книги, связанные с факультетами пользователя
             return bookRepository.findByFacultiesIn(user.getFaculties());
         }
     }
+
 
 
     public boolean isBookAddedByUser (Long bookId, String username) {
