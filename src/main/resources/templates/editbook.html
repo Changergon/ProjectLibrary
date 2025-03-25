@@ -32,9 +32,14 @@
     <br>
     <label for="authorLastName">Фамилия автора:</label>
     <input type="text" id="authorLastName" name="authorLastName" required>
+    <br>
 
-    <label>Факультеты:</label>
-    <div id="facultyContainer"></div> <!-- Контейнер для факультетов -->
+    <div class="dropdown">
+        <button type="button">Выберите факультеты</button>
+        <div class="dropdown-content" id="facultyContainer">
+            <!-- Факультеты будут загружены сюда -->
+        </div>
+    </div>
 
     <button type="submit">Сохранить изменения</button>
 </form>
