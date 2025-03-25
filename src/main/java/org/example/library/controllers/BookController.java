@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -180,20 +181,19 @@ public class BookController {
         }
 
         try {
-            String directory = "C:\\Users\\Дмитрий\\IdeaProjects\\ProjectLibrary\\src\\main\\resources\\Storage";
-            File dir = new File(directory);
+            // Получаем путь к корню проекта
+            String projectRoot = new File("").getAbsolutePath();
+            String directory = projectRoot + "/src/main/resources/Storage";
 
-            // Создаем директорию, если она не существует
+            File dir = new File(directory);
             if (!dir.exists() && !dir.mkdirs()) {
                 throw new IOException("Не удалось создать директорию: " + dir.getAbsolutePath());
             }
 
-            String fileName = file.getOriginalFilename();
+            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
             File destinationFile = new File(dir, fileName);
 
-            // Сохраняем файл
             file.transferTo(destinationFile);
-
             return destinationFile.getAbsolutePath();
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при сохранении файла: " + e.getMessage(), e);
