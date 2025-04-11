@@ -1,6 +1,48 @@
-<nav>
-    <a href="/books">Книги</a>
-    <a href="/add-book">Добавить книгу</a>
-    <a href="/admin">Управление пользователями</a>
-    <a href="/logout">Выйти</a>
+<!DOCTYPE html>
+<html lang="ru" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Навигация</title>
+    <link rel="stylesheet" href="/navbar.css">
+</head>
+<body>
+<nav th:fragment="navbar" class="navbar">
+    <div class="navbar-brand">
+        <a href="/">Электронная библиотека</a>
+    </div>
+    <div class="nav-links">
+        <a href="/books" class="nav-link">Книги</a>
+        <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/add-book" class="nav-link">Добавить книгу</a>
+        <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/books-edit" class="nav-link">Редактировать книги</a>
+        <a sec:authorize="hasRole('ADMIN')" href="/admin" class="nav-link">Управление пользователями</a>
+    </div>
+    <div class="user-section">
+        <span id="username-display"></span>
+        <button id="logout-btn" class="logout-btn">Выйти</button>
+    </div>
 </nav>
+
+<script>
+    // Загрузка информации о текущем пользователе
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/api/users/current');
+            if (response.ok) {
+                const user = await response.json();
+                document.getElementById('username-display').textContent = user.username;
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке пользователя:', error);
+        }
+    });
+
+    // Обработчик выхода
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        fetch('/api/users/logout', { method: 'POST' })
+            .then(() => window.location.href = '/login')
+            .catch(error => console.error('Ошибка при выходе:', error));
+    });
+</script>
+</body>
+</html>

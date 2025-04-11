@@ -11,7 +11,7 @@
     z-index: 1000;
 }
 
-.navbar-brand {
+.navbar-brand a {
     font-weight: bold;
     font-size: 1.2rem;
     color: white;
@@ -23,7 +23,7 @@
     gap: 1rem;
 }
 
-.nav-links a {
+.nav-link {
     color: white;
     text-decoration: none;
     padding: 0.5rem 1rem;
@@ -31,7 +31,7 @@
     transition: background-color 0.3s;
 }
 
-.nav-links a:hover {
+.nav-link:hover {
     background-color: #0056b3;
 }
 
@@ -57,4 +57,21 @@
 
 .logout-btn:hover {
     background-color: #c82333;
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        padding: 0.5rem;
+    }
+
+    .nav-links {
+        margin: 0.5rem 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .user-section {
+        margin-top: 0.5rem;
+    }
 }

@@ -41,7 +41,18 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31536000)
                         )
                         .frameOptions().sameOrigin() // Обратите внимание: этот метод тоже устарел, но может быть временным решением
+                )
+
+                .logout(logout -> logout
+                        .logoutUrl("/api/users/logout")
+                        .logoutSuccessUrl("/login")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
                 );
+
+
+
 
         return http.build();
     }
