@@ -78,15 +78,7 @@ public class ViewController {
         }
     }
 
-    @GetMapping("/actions")
-    public String getActionsPage(Model model, Principal principal) {
-        LibraryUser  currentUser  = userService.findByUsername(principal.getName());
-        List<String> roles = currentUser .getRoles().stream()
-                .map(Role::getRoleName)
-                .collect(Collectors.toList());
-        model.addAttribute("roles", roles);
-        return "actions"; // Возвращает имя шаблона (например, actions.html)
-    }
+
 
 
     @GetMapping("/books-edit")

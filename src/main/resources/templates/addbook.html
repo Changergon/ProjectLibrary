@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Добавить книгу</title>
     <link rel="stylesheet" href="/addbook.css"> <!-- Подключение CSS -->
+    <link rel="stylesheet" href="/navbar.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script>
@@ -123,6 +124,7 @@
     </script>
 </head>
 <body>
+<div th:replace="~{navbar :: navbar}"></div>
 <h1>Добавить книгу</h1>
 <div id="message"></div> <!-- Блок для отображения сообщения -->
 <div class="container"> <!-- Обернули форму в контейнер -->
