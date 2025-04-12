@@ -284,20 +284,12 @@ public class BookController {
 
 
         // ↕ Сортировка
-        Comparator<Book> comparator;
-        switch (sort) {
-            case "year":
-                comparator = Comparator.comparing(Book::getPublicationYear);
-                break;
-            case "title":
-                comparator = Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
-                break;
-            case "publisher":
-                comparator = Comparator.comparing(Book::getPublisher, String.CASE_INSENSITIVE_ORDER);
-                break;
-            default:
-                comparator = Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
-        }
+        Comparator<Book> comparator = switch (sort) {
+            case "year" -> Comparator.comparing(Book::getPublicationYear);
+            case "title" -> Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+            case "publisher" -> Comparator.comparing(Book::getPublisher, String.CASE_INSENSITIVE_ORDER);
+            default -> Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+        };
 
         if (direction.equalsIgnoreCase("desc")) {
             comparator = comparator.reversed();
@@ -305,7 +297,7 @@ public class BookController {
 
         books.sort(comparator);
 
-        // 📄 Пагинация
+        //  Пагинация
         int start = (int) PageRequest.of(page, size).getOffset();
         int end = Math.min((start + size), books.size());
         Page<Book> bookPage = new PageImpl<>(books.subList(start, end), PageRequest.of(page, size), books.size());
