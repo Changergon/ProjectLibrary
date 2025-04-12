@@ -10,42 +10,51 @@
 <body>
 <div th:replace="~{navbar :: navbar}"></div>
 <h1>Редактировать книги</h1>
-<table>
-    <thead>
-    <tr>
-        <th>Название</th>
-        <th>Действия</th>
-    </tr>
-    </thead>
-    <tbody id="booksTableBody">
-    <!-- Книги будут добавлены сюда через JavaScript -->
-    </tbody>
-</table>
+<main>
+    <table>
+        <thead>
+        <tr>
+            <th>Название</th>
+            <th>Автор</th>
+            <th>Год</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody id="booksTableBody">
+        <!-- Книги будут добавлены сюда через JavaScript -->
+        </tbody>
+    </table>
+</main>
+
 <footer>
     <p>&copy; 2024 Электронная библиотека</p>
 </footer>
+
 <script>
     async function loadBooks() {
-        const page = 0; // Номер страницы по умолчанию
-        const size = 10; // Размер страницы по умолчанию
-        const response = await fetch(`/api/books/all?page=${page}&size=${size}`); // Запрос на получение всех книг
+        const page = 0;
+        const size = 10;
+        const response = await fetch(`/api/books/all?page=${page}&size=${size}`);
         const data = await response.json();
-        const books = data.content; // Получаем массив книг из объекта Page<BookDTO>
+        const books = data.content;
         const tableBody = document.getElementById('booksTableBody');
 
         books.forEach(book => {
+            // Берём автора из массива authorNames[0]
+            const author = book.authorNames?.[0] || '—';
+
             const row = document.createElement('tr');
             row.innerHTML = `
-            <td>${book.title}</td>
-            <td>
-                <a href="/books/edit?id=${book.bookId}">Редактировать</a>
-            </td>
-        `;
+                <td>${book.title}</td>
+                <td>${author}</td>
+                <td>${book.publicationYear || '—'}</td>
+                <td><a href="/books/edit?id=${book.bookId}">Редактировать</a></td>
+            `;
             tableBody.appendChild(row);
         });
     }
 
-    window.onload = loadBooks; // Загружаем книги при загрузке страницы
+    window.onload = loadBooks;
 </script>
 </body>
 </html>

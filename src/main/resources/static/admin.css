@@ -1,17 +1,19 @@
-body {
+html, body {
+    height: 100%;
+    margin: 0;
     font-family: 'Arial', sans-serif;
-    background-image: url('https://fotoblik.ru/wp-content/uploads/2023/09/stol-v-biblioteke-2.webp');
+    background-image: url('https://fotoblik.ru/wp-content/uploads/2023/09/bumaga-gazetnaia-9.webp');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    background-attachment: fixed; /* Фиксированный фон */
-    margin: 0;
-    padding: 80px 20px; /* Уменьшено паддинг для лучшего отображения на мобильных устройствах */
-    height: 100vh; /* Высота на весь экран */
-    display: flex; /* Используем flex для центрирования содержимого */
-    flex-direction: column; /* Вертикальное направление */
-    justify-content: center; /* Центрируем содержимое по вертикали */
+    background-attachment: fixed;
+    color: #333;
 }
+
+* {
+    box-sizing: border-box;
+}
+
 
 main {
     max-width: 800px;
@@ -106,21 +108,38 @@ footer {
     color: #555; /* Цвет текста футера */
 }
 
+/* Сделаем навбар прилипающим */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+
+
+
+
+/* Стили для новых колонок */
+td:nth-child(2),
+td:nth-child(3) {
+    white-space: nowrap;
+}
+
+
 /* Адаптивные стили */
 @media (max-width: 600px) {
     body {
-        padding: 40px 10px; /* Уменьшение паддинга на мобильных устройствах */
+        /* Убери padding, чтобы не ломать ширину */
+        padding: 0;
     }
 
     main {
-        padding: 20px; /* Уменьшение паддинга в главном блоке */
-    }
-
-    h1 {
-        font-size: 24px; /* Уменьшение размера заголовка на мобильных устройствах */
-    }
-
-    button {
-        padding: 10px; /* Уменьшение паддинга для кнопок на мобильных устройствах */
+        padding: 20px 10px; /* сюда перенесем боковые отступы */
     }
 }
+
