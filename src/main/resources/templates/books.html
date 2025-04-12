@@ -9,17 +9,38 @@
 </head>
 <body>
 <div th:replace="~{navbar :: navbar}"></div>
+
 <header>
     <h1>Список книг</h1>
     <p>Пользователь: <span id="currentUserName"></span> ID: <span id="currentUserId"></span></p>
 </header>
-<main>
+<div class="content-wrapper">
+<!-- Меню поиска и фильтрации отдельно -->
+<section class="filter-menu">
     <div class="search-container">
         <label for="searchQuery"></label>
         <input type="text" id="searchQuery" placeholder="Поиск по названию или автору...">
         <button id="searchButton">Поиск</button>
     </div>
+    <div class="filters-container">
+        <select id="sortSelect">
+            <option value="">Сортировать по...</option>
+            <option value="title">По названию</option>
+            <option value="year">По году издания</option>
+            <option value="author">По автору</option>
+        </select>
 
+        <select id="filterYear">
+            <option value="">Фильтр по году</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <!-- добавь больше по необходимости -->
+        </select>
+    </div>
+</section>
+
+<main>
     <div id="loading" style="display:none;">Загрузка книг...</div>
     <div class="books-container" id="bookList">
         <!-- Карточки книг будут загружены сюда через JavaScript -->
@@ -39,40 +60,42 @@
             bookList.innerHTML = '';
             document.getElementById('loading').style.display = 'block';
 
+            const sortValue = document.getElementById('sortSelect').value;
+            const filterYear = document.getElementById('filterYear').value;
+
             try {
-                const response = await fetch(`/api/books/user/${currentUserId}?page=${page - 1}&size=${pageSize}`);
+                let url = `/api/books/user/${currentUserId}?page=${page - 1}&size=${pageSize}`;
+
+                if (sortValue) url += `&sort=${sortValue}`;
+                if (filterYear) url += `&year=${filterYear}`;
+
+                const response = await fetch(url);
                 if (!response.ok) throw new Error(`Ошибка: ${response.statusText}`);
 
                 const data = await response.json();
-                const books = data.content || data;
+                const books = removeDuplicateBooks(data.content || data);
 
-                // Удаляем дубликаты на клиенте (дополнительная защита)
-                const uniqueBooks = removeDuplicateBooks(books);
+                const booksContainer = document.getElementById('bookList');
+                booksContainer.innerHTML = '';
 
-                if (uniqueBooks.length > 0) {
-                    const booksContainer = document.getElementById('bookList');
-                    booksContainer.innerHTML = ''; // Очищаем контейнер
-
-                    uniqueBooks.forEach(book => {
+                if (books.length > 0) {
+                    books.forEach(book => {
                         const card = document.createElement('div');
                         card.className = 'book-card';
-
                         card.innerHTML = `
-            <div class="book-card-content">
-                <div class="book-title">${book.title}</div>
-                <div class="book-authors">${book.authorNames.join(', ')}</div>
-                <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
-                <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
-                <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
-                <div class="book-description">${book.description || 'Описание отсутствует'}</div>
-            </div>
-            <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
-        `;
-
+                    <div class="book-card-content">
+                        <div class="book-title">${book.title}</div>
+                        <div class="book-authors">${book.authorNames.join(', ')}</div>
+                        <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
+                        <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+                        <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
+                        <div class="book-description">${book.description || 'Описание отсутствует'}</div>
+                    </div>
+                    <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
+                `;
                         booksContainer.appendChild(card);
                     });
                 } else {
-                    const booksContainer = document.getElementById('bookList');
                     booksContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Книги не найдены.</p>';
                 }
             } catch (error) {
@@ -83,6 +106,16 @@
                 document.getElementById('currentPage').textContent = page;
             }
         }
+
+        document.getElementById('sortSelect').addEventListener('change', () => {
+            displayBooksForUser(1); // всегда возвращаемся к первой странице при фильтрации
+        });
+
+        document.getElementById('filterYear').addEventListener('change', () => {
+            displayBooksForUser(1);
+        });
+
+
 
         // Вспомогательная функция для удаления дубликатов
         function removeDuplicateBooks(books) {
@@ -114,18 +147,25 @@
 
                 if (books.content && books.content.length > 0) {
                     books.content.forEach(book => {
-                        const listItem = document.createElement('li');
-                        const bookLink = document.createElement('a');
-                        bookLink.textContent = `${book.title} - ${book.authorNames.join(', ')}`;
-                        bookLink.href = `/books/read?id=${book.bookId}`;
-                        listItem.appendChild(bookLink);
-                        bookList.appendChild(listItem);
+                        const card = document.createElement('div');
+                        card.className = 'book-card';
+                        card.innerHTML = `
+            <div class="book-card-content">
+                <div class="book-title">${book.title}</div>
+                <div class="book-authors">${book.authorNames.join(', ')}</div>
+                <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
+                <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+                <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
+                <div class="book-description">${book.description || 'Описание отсутствует'}</div>
+            </div>
+            <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
+        `;
+                        bookList.appendChild(card);
                     });
                 } else {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = 'Книги не найдены по вашему запросу.';
-                    bookList.appendChild(listItem);
+                    bookList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Книги не найдены по вашему запросу.</p>';
                 }
+
             } catch (error) {
                 console.error("Ошибка при поиске книг:", error);
                 const listItem = document.createElement('li');
@@ -200,7 +240,19 @@
                 await displayBooksForUser(currentPage);
             }
         };
+
+        document.getElementById('searchQuery').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {  // Проверяем, была ли нажата клавиша Enter
+                const query = document.getElementById('searchQuery').value;
+                if (query.trim()) {
+                    searchBooks(query);
+                } else {
+                    displayBooksForUser(currentPage);
+                }
+            }
+        });
     </script>
 </main>
+</div>
 </body>
 </html>

@@ -259,7 +259,10 @@ public class BookController {
     public ResponseEntity<Page<BookDTO>> getBooksForUser(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false, defaultValue = "title") String sort,
+            @RequestParam(required = false, defaultValue = "asc") String direction) {
 
         LibraryUser user = userService.findById(userId);
         if (user == null) {
@@ -268,18 +271,49 @@ public class BookController {
 
         List<Book> books = bookService.getBooksForUser(user);
 
-        // Пагинация
+        // 🔎 Фильтрация (по названию или автору)
+        if (filter != null && !filter.isEmpty()) {
+            String lowerCaseFilter = filter.toLowerCase();
+            books = books.stream().filter(book ->
+                    book.getTitle().toLowerCase().contains(lowerCaseFilter) ||
+                            book.getBookAuthors().stream()
+                                    .map(bookAuthor -> (bookAuthor.getAuthor().getFirstName() + " " + bookAuthor.getAuthor().getLastName()).toLowerCase())
+                                    .anyMatch(authorName -> authorName.contains(lowerCaseFilter))
+            ).collect(Collectors.toList());
+        }
+
+
+        // ↕ Сортировка
+        Comparator<Book> comparator;
+        switch (sort) {
+            case "year":
+                comparator = Comparator.comparing(Book::getPublicationYear);
+                break;
+            case "title":
+                comparator = Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+                break;
+            case "publisher":
+                comparator = Comparator.comparing(Book::getPublisher, String.CASE_INSENSITIVE_ORDER);
+                break;
+            default:
+                comparator = Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+        }
+
+        if (direction.equalsIgnoreCase("desc")) {
+            comparator = comparator.reversed();
+        }
+
+        books.sort(comparator);
+
+        // 📄 Пагинация
         int start = (int) PageRequest.of(page, size).getOffset();
         int end = Math.min((start + size), books.size());
-        Page<Book> bookPage = new PageImpl<>(
-                books.subList(start, end),
-                PageRequest.of(page, size),
-                books.size()
-        );
+        Page<Book> bookPage = new PageImpl<>(books.subList(start, end), PageRequest.of(page, size), books.size());
 
         Page<BookDTO> bookDTOs = bookPage.map(this::convertToDTO);
         return ResponseEntity.ok(bookDTOs);
     }
+
 
 
 // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\controllers\BookController.java
