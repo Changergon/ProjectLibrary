@@ -37,9 +37,10 @@
 
         <div id="pagination">
             <button id="prevPage">Предыдущая</button>
-            <span id="currentPage">1</span>
+            <div id="pageNumbers" style="display: inline-block; margin: 0 10px;"></div>
             <button id="nextPage">Следующая</button>
         </div>
+
 
         <script>
             let currentPage = 1;
@@ -65,6 +66,9 @@
                     const books = removeDuplicateBooks(data.content || data);
                     totalPages = data.totalPages || 1;
 
+                    // Обновляем пагинацию сразу после загрузки данных
+                    updatePaginationButtons(); // Добавьте это для обновления кнопок пагинации
+
                     const booksContainer = document.getElementById('bookList');
                     booksContainer.innerHTML = '';
 
@@ -73,16 +77,16 @@
                             const card = document.createElement('div');
                             card.className = 'book-card';
                             card.innerHTML = `
-                            <div class="book-card-content">
-                                <div class="book-title">${book.title}</div>
-                                <div class="book-authors">${book.authorNames.join(', ')}</div>
-                                <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
-                                <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
-                                <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
-                                <div class="book-description">${book.description || 'Описание отсутствует'}</div>
-                            </div>
-                            <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
-                        `;
+                <div class="book-card-content">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-authors">${book.authorNames.join(', ')}</div>
+                    <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
+                    <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+                    <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
+                    <div class="book-description">${book.description || 'Описание отсутствует'}</div>
+                </div>
+                <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
+            `;
                             booksContainer.appendChild(card);
                         });
                     } else {
@@ -94,9 +98,9 @@
                 } finally {
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('currentPage').textContent = page;
-                    updatePaginationButtons(); // обновить кнопки
                 }
             }
+
 
             function removeDuplicateBooks(books) {
                 const uniqueBooks = [];
@@ -171,13 +175,46 @@
                 }
             }
 
+
+
             function updatePaginationButtons() {
                 const prevButton = document.getElementById('prevPage');
                 const nextButton = document.getElementById('nextPage');
 
                 prevButton.disabled = currentPage <= 1;
                 nextButton.disabled = currentPage >= totalPages;
+
+                renderPageNumbers(); // вызываем отрисовку кнопок
             }
+
+            function renderPageNumbers() {
+                const container = document.getElementById('pageNumbers');
+                container.innerHTML = ''; // Очистим контейнер перед добавлением новых кнопок
+
+                if (totalPages <= 1) return; // Если страниц меньше одной, скрываем пагинацию
+
+                const maxPagesToShow = 7;
+                let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                let endPage = startPage + maxPagesToShow - 1;
+
+                if (endPage > totalPages) {
+                    endPage = totalPages;
+                    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = (i === currentPage) ? 'active-page' : '';
+                    pageBtn.addEventListener('click', () => {
+                        currentPage = i;
+                        displayBooksForUser(currentPage); // При клике обновляем книги для выбранной страницы
+                    });
+                    container.appendChild(pageBtn);
+                }
+            }
+
+
 
             document.getElementById('prevPage').addEventListener('click', () => {
                 if (currentPage > 1) {

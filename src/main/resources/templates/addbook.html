@@ -14,6 +14,10 @@
 
             const formData = new FormData(event.target); // Получаем данные формы
 
+            // Получение CSRF токена, если он передан через скрытое поле
+            const csrfToken = document.querySelector('input[name="_csrf"]').value;
+            formData.append('_csrf', csrfToken); // Добавляем CSRF токен в FormData
+
             // Собираем выбранные факультеты
             const selectedFaculties = [];
             const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
@@ -39,14 +43,17 @@
             try {
                 const response = await fetch('/api/books/upload', {
                     method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken // Передаем CSRF токен в заголовке
+                    },
                     body: formData
                 });
 
                 const messageElement = document.getElementById('message'); // Элемент для отображения сообщения
 
                 if (response.ok) {
-                    const message = await response.text(); // Получаем текст ответа
-                    messageElement.textContent = message; // Отображаем сообщение
+                    // Получаем текст ответа
+                    messageElement.textContent = await response.text(); // Отображаем сообщение
                     messageElement.style.color = 'green'; // Устанавливаем цвет текста
                     event.target.reset(); // Сбрасываем форму после успешной отправки
                 } else {
@@ -159,6 +166,9 @@
                 <!-- Факультеты будут загружены сюда -->
             </div>
         </div>
+
+        <!-- CSRF Token -->
+        <input type="hidden" name="_csrf" value="${_csrf.token}"> <!-- Только для серверной страницы -->
 
         <button type="submit">Добавить книгу</button>
     </form>

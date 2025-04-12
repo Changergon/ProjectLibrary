@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 )
+
                 .logout(logout -> logout
                         .logoutUrl("/api/users/logout")
                         .logoutSuccessUrl("/login?logout")
@@ -57,6 +58,9 @@ public class SecurityConfig {
                         )
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 );
+
+        http.csrf().ignoringRequestMatchers("/api/**");
+
 
         return http.build();
     }
