@@ -108,3 +108,73 @@ a:hover {
         margin-bottom: 10px; /* Добавляем отступ снизу */
     }
 }
+
+
+/* Стили для карточек книг */
+.books-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.book-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.book-card-content {
+    padding: 15px;
+}
+
+.book-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.book-authors {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
+.book-meta {
+    font-size: 0.9em;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.book-description {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #444;
+    line-height: 1.4;
+}
+
+.read-button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #007BFF;
+    color: white;
+    text-align: center;
+    border: none;
+    border-radius: 0 0 8px 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.read-button:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}

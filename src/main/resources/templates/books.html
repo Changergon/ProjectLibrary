@@ -21,9 +21,9 @@
     </div>
 
     <div id="loading" style="display:none;">Загрузка книг...</div>
-    <ul id="bookList">
-        <!-- Книги будут загружены сюда через JavaScript -->
-    </ul>
+    <div class="books-container" id="bookList">
+        <!-- Карточки книг будут загружены сюда через JavaScript -->
+    </div>
     <div id="pagination">
         <button id="prevPage">Предыдущая</button>
         <span id="currentPage">1</span>
@@ -50,16 +50,30 @@
                 const uniqueBooks = removeDuplicateBooks(books);
 
                 if (uniqueBooks.length > 0) {
+                    const booksContainer = document.getElementById('bookList');
+                    booksContainer.innerHTML = ''; // Очищаем контейнер
+
                     uniqueBooks.forEach(book => {
-                        const listItem = document.createElement('li');
-                        const bookLink = document.createElement('a');
-                        bookLink.textContent = `${book.title} - ${book.authorNames.join(', ')}`;
-                        bookLink.href = `/books/read?id=${book.bookId}`;
-                        listItem.appendChild(bookLink);
-                        bookList.appendChild(listItem);
+                        const card = document.createElement('div');
+                        card.className = 'book-card';
+
+                        card.innerHTML = `
+            <div class="book-card-content">
+                <div class="book-title">${book.title}</div>
+                <div class="book-authors">${book.authorNames.join(', ')}</div>
+                <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
+                <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+                <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
+                <div class="book-description">${book.description || 'Описание отсутствует'}</div>
+            </div>
+            <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
+        `;
+
+                        booksContainer.appendChild(card);
                     });
                 } else {
-                    bookList.innerHTML = '<li>Книги не найдены.</li>';
+                    const booksContainer = document.getElementById('bookList');
+                    booksContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Книги не найдены.</p>';
                 }
             } catch (error) {
                 console.error("Ошибка при загрузке книг:", error);
