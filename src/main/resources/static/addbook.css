@@ -1,8 +1,7 @@
 html, body {
-    height: 100%; /* Устанавливаем высоту 100% для html и body */
-    margin: 0; /* Убираем отступы */
-    display: flex; /* Используем Flexbox для центрирования */
-    flex-direction: column; /* Располагаем элементы по вертикали */
+    height: 100%;
+    margin: 0;
+    font-family: Arial, sans-serif;
 }
 
 body {
@@ -32,8 +31,10 @@ body {
 h1 {
     text-align: center;
     color: #333;
-    margin-bottom: 20px; /* Добавим отступ снизу */
+    margin: 20px 0 20px 0; /* Убедимся, что сверху отступа нет */
 }
+
+
 
 footer {
     text-align: center; /* Центрируем текст футера */
