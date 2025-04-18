@@ -284,12 +284,18 @@ public class BookController {
 
 
         // ↕ Сортировка
+        // ↕ Сортировка
         Comparator<Book> comparator = switch (sort) {
             case "year" -> Comparator.comparing(Book::getPublicationYear);
             case "title" -> Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+            case "author" -> Comparator.comparing(book ->
+                    book.getBookAuthors().stream()
+                            .map(bookAuthor -> bookAuthor.getAuthor().getFirstName() + " " + bookAuthor.getAuthor().getLastName())
+                            .collect(Collectors.joining(" ")), String.CASE_INSENSITIVE_ORDER);
             case "publisher" -> Comparator.comparing(Book::getPublisher, String.CASE_INSENSITIVE_ORDER);
             default -> Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
         };
+
 
         if (direction.equalsIgnoreCase("desc")) {
             comparator = comparator.reversed();
