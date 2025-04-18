@@ -15,13 +15,61 @@ html, body {
 }
 
 
-main {
-    max-width: 800px;
-    margin: auto;
+
+
+
+.content-container {
+    display: flex;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 70px auto 20px; /* Учитываем фиксированный navbar */
+    padding: 0 20px;
+}
+
+.search-container {
+    width: 280px;
     background: rgba(255, 255, 255, 0.9);
-    padding: 30px; /* Увеличен паддинг для лучшего восприятия */
-    border-radius: 12px; /* Увеличен радиус скругления */
+    padding: 20px;
+    border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 80px; /* Отступ от фиксированного navbar */
+    align-self: flex-start;
+}
+
+main {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+
+#searchButton {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#searchInput {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+
+#searchButton:hover {
+    background-color: #0056b3;
 }
 
 h1 {
@@ -120,6 +168,22 @@ nav {
 }
 
 
+#pagination {
+    display: flex; /* Используем Flexbox для горизонтального расположения */
+    justify-content: center; /* Центрируем кнопки пагинации */
+    margin-top: 20px; /* Отступ сверху */
+}
+
+#pagination button {
+    margin: 0 5px; /* Отступы между кнопками */
+    width: auto; /* Убираем ширину 100%, чтобы кнопки были по размеру текста */
+}
+
+.active {
+    font-weight: bold; /* Выделяем активную страницу */
+    background-color: #0056b3; /* Цвет фона для активной страницы */
+    color: white; /* Цвет текста для активной страницы */
+}
 
 
 
@@ -132,14 +196,15 @@ td:nth-child(3) {
 
 
 /* Адаптивные стили */
-@media (max-width: 600px) {
-    body {
-        /* Убери padding, чтобы не ломать ширину */
-        padding: 0;
+@media (max-width: 768px) {
+    .content-container {
+        flex-direction: column;
     }
 
-    main {
-        padding: 20px 10px; /* сюда перенесем боковые отступы */
+    .search-container {
+        width: 100%;
+        position: static;
+        margin-bottom: 20px;
     }
 }
 

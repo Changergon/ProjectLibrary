@@ -47,46 +47,45 @@
             const pageSize = 10;
             let currentUserId = null;
             let totalPages = 1; // общее количество страниц
+            let searchQuery=''
 
-            async function displayBooksForUser(page = 1) {
+            async function displayBooksForUser(page = 1, query = searchQuery, sort = document.getElementById('sortSelect').value) {
                 const bookList = document.getElementById('bookList');
                 bookList.innerHTML = '';
                 document.getElementById('loading').style.display = 'block';
 
-                const sortValue = document.getElementById('sortSelect').value;
-
                 try {
                     let url = `/api/books/user/${currentUserId}?page=${page - 1}&size=${pageSize}`;
-                    if (sortValue) url += `&sort=${sortValue}`;
+                    if (query) url += `&query=${encodeURIComponent(query)}`; // Добавляем параметр поиска
+                    if (sort) url += `&sort=${sort}`; // Добавляем параметр сортировки
 
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`Ошибка: ${response.statusText}`);
 
                     const data = await response.json();
-                    const books = removeDuplicateBooks(data.content || data);
                     totalPages = data.totalPages || 1;
 
                     // Обновляем пагинацию сразу после загрузки данных
-                    updatePaginationButtons(); // Добавьте это для обновления кнопок пагинации
+                    updatePaginationButtons();
 
                     const booksContainer = document.getElementById('bookList');
                     booksContainer.innerHTML = '';
 
-                    if (books.length > 0) {
-                        books.forEach(book => {
+                    if (data.content.length > 0) {
+                        data.content.forEach(book => {
                             const card = document.createElement('div');
                             card.className = 'book-card';
                             card.innerHTML = `
-                <div class="book-card-content">
-                    <div class="book-title">${book.title}</div>
-                    <div class="book-authors">${book.authorNames.join(', ')}</div>
-                    <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
-                    <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
-                    <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
-                    <div class="book-description">${book.description || 'Описание отсутствует'}</div>
-                </div>
-                <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
-            `;
+                    <div class="book-card-content">
+                        <div class="book-title">${book.title}</div>
+                        <div class="book-authors">${book.authorNames.join(', ')}</div>
+                        <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
+                        <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+                        <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
+                        <div class="book-description">${book.description || 'Описание отсутствует'}</div>
+                    </div>
+                    <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
+                `;
                             booksContainer.appendChild(card);
                         });
                     } else {
@@ -97,23 +96,8 @@
                     bookList.innerHTML = '<li>Ошибка при загрузке книг.</li>';
                 } finally {
                     document.getElementById('loading').style.display = 'none';
-                    document.getElementById('currentPage').textContent = page;
                 }
             }
-
-
-            function removeDuplicateBooks(books) {
-                const uniqueBooks = [];
-                const bookIds = new Set();
-                books.forEach(book => {
-                    if (!bookIds.has(book.bookId)) {
-                        bookIds.add(book.bookId);
-                        uniqueBooks.push(book);
-                    }
-                });
-                return uniqueBooks;
-            }
-
             async function searchBooks(query) {
                 const bookList = document.getElementById('bookList');
                 bookList.innerHTML = '';
@@ -219,41 +203,46 @@
             document.getElementById('prevPage').addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    displayBooksForUser(currentPage);
+                    displayBooksForUser (currentPage, searchQuery); // Передаем поисковый запрос
                 }
             });
 
             document.getElementById('nextPage').addEventListener('click', () => {
                 if (currentPage < totalPages) {
                     currentPage++;
-                    displayBooksForUser(currentPage);
+                    displayBooksForUser (currentPage, searchQuery); // Передаем поисковый запрос
                 }
             });
 
-            document.getElementById('sortSelect').addEventListener('change', () => {
+
+            document.getElementById('sortSelect').addEventListener('change', (event) => {
                 currentPage = 1;
-                displayBooksForUser(currentPage);
+                const sortValue = event.target.value;
+                displayBooksForUser(currentPage, searchQuery, sortValue); // передаём значение сортировки
             });
 
             document.getElementById('searchButton').addEventListener('click', () => {
-                const query = document.getElementById('searchQuery').value;
-                if (query.trim()) {
-                    searchBooks(query);
+                searchQuery = document.getElementById('searchQuery').value.trim();
+                currentPage = 1; // Сбрасываем на первую страницу при новом поиске
+                if (searchQuery) {
+                    searchBooks(searchQuery);
                 } else {
-                    displayBooksForUser(currentPage);
+                    displayBooksForUser (currentPage);
                 }
             });
 
             document.getElementById('searchQuery').addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
-                    const query = document.getElementById('searchQuery').value;
-                    if (query.trim()) {
-                        searchBooks(query);
+                    searchQuery = document.getElementById('searchQuery').value.trim();
+                    currentPage = 1; // Сбрасываем на первую страницу при новом поиске
+                    if (searchQuery) {
+                        searchBooks(searchQuery);
                     } else {
-                        displayBooksForUser(currentPage);
+                        displayBooksForUser (currentPage);
                     }
                 }
             });
+
 
             async function checkSession() {
                 try {

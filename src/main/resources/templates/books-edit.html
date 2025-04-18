@@ -7,9 +7,15 @@
     <link rel="stylesheet" href="/admin.css"> <!-- Подключение CSS -->
     <link rel="stylesheet" href="/navbar.css">
 </head>
-<body>
+<body class="books-page">
 <div th:replace="~{navbar :: navbar}"></div>
 <h1>Редактировать книги</h1>
+<div class="content-container">
+<div>
+    <label for="searchInput">Поиск по названию или автору:</label>
+    <input type="text" id="searchInput" placeholder="Введите название или автора..." />
+    <button id="searchButton">Поиск</button>
+</div>
 <main>
     <table>
         <thead>
@@ -24,25 +30,63 @@
         <!-- Книги будут добавлены сюда через JavaScript -->
         </tbody>
     </table>
+    <div id="pagination">
+        <button id="prevPage">Предыдущая</button>
+        <div id="pageNumbers"></div>
+        <button id="nextPage">Следующая</button>
+    </div>
 </main>
+</div>
 
 <footer>
     <p>&copy; 2024 Электронная библиотека</p>
 </footer>
 
 <script>
+    let currentPage = 1;
+    const pageSize = 10;
+    let searchQuery = ''; // Переменная для хранения поискового запроса
+
+    // Функция для загрузки книг
     async function loadBooks() {
-        const page = 0;
-        const size = 10;
-        const response = await fetch(`/api/books/all?page=${page}&size=${size}`);
-        const data = await response.json();
-        const books = data.content;
+        try {
+            let url;
+            if (searchQuery) {
+                url = `/api/books/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage - 1}&size=${pageSize}`;
+            } else {
+                url = `/api/books/all?page=${currentPage - 1}&size=${pageSize}`;
+            }
+
+            console.log("Отправляемый запрос:", url);
+
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            console.log("Полученные данные:", data);
+
+            if (data.content.length === 0) {
+                document.getElementById('booksTableBody').innerHTML =
+                    '<tr><td colspan="4">Ничего не найдено</td></tr>';
+            } else {
+                renderBooks(data.content);
+            }
+            updatePagination(data.totalPages);
+        } catch (error) {
+            console.error("Ошибка:", error);
+            document.getElementById('booksTableBody').innerHTML = `
+            <tr><td colspan="4">Ошибка загрузки: ${error.message}</td></tr>
+        `;
+        }
+    }
+
+    // Функция для отображения книг в таблице
+    function renderBooks(books) {
         const tableBody = document.getElementById('booksTableBody');
+        tableBody.innerHTML = '';
 
         books.forEach(book => {
-            // Берём автора из массива authorNames[0]
             const author = book.authorNames?.[0] || '—';
-
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${book.title}</td>
@@ -54,7 +98,61 @@
         });
     }
 
+    // Функция для обновления пагинации
+    function updatePagination(totalPages) {
+        const pageNumbers = document.getElementById('pageNumbers');
+        pageNumbers.innerHTML = '';
+
+        for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.addEventListener('click', () => {
+                currentPage = i;
+                loadBooks();
+            });
+
+            if (i === currentPage) {
+                button.classList.add('active');
+            }
+
+            pageNumbers.appendChild(button);
+        }
+
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages;
+    }
+
+    // Функция для обработки поиска
+    function handleSearch() {
+        searchQuery = document.getElementById('searchInput').value.trim();
+        console.log("Поиск:", searchQuery); // Отладка
+        currentPage = 1;
+        loadBooks();
+    }
+
+
+    // Обработчики событий
+    document.getElementById('searchButton').addEventListener('click', handleSearch);
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSearch();
+    });
+
+    // Обработчики событий для кнопок пагинации
+    document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadBooks();
+        }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', () => {
+        currentPage++;
+        loadBooks();
+    });
+
+    // Загрузка книг при загрузке страницы
     window.onload = loadBooks;
 </script>
+
 </body>
 </html>
