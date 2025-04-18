@@ -2,7 +2,7 @@ html, body {
     height: 100%;
     margin: 0;
     font-family: 'Arial', sans-serif;
-    background-image: url('https://fotoblik.ru/wp-content/uploads/2023/09/bumaga-gazetnaia-9.webp');
+    background-image: url('/image/4.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -15,7 +15,9 @@ html, body {
 }
 
 
-
+h1{
+    background: rgba(255, 255, 255, 0.9);
+}
 
 
 .content-container {
@@ -150,6 +152,7 @@ label {
 }
 
 footer {
+    background: rgba(255, 255, 255, 0.9);
     text-align: center;
     margin-top: 20px;
     font-size: 14px; /* Размер шрифта для футера */

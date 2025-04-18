@@ -6,7 +6,7 @@ html, body {
 
 body {
     font-family: Arial, sans-serif;
-    background-image: url('https://fotoblik.ru/wp-content/uploads/2023/09/biblioteka-fon-8.webp');
+    background-image: url('/image/5.jpg');
     background-size: cover; /* Фон будет покрывать всю страницу */
     background-position: center; /* Центрирование фона */
     background-repeat: no-repeat; /* Без повторения фона */
@@ -29,6 +29,7 @@ body {
 }
 
 h1 {
+    background: rgba(255, 255, 255, 0.9);
     text-align: center;
     color: #333;
     margin: 20px 0 20px 0; /* Убедимся, что сверху отступа нет */
@@ -39,6 +40,7 @@ h1 {
 footer {
     text-align: center; /* Центрируем текст футера */
     padding: 10px 0; /* Добавляем отступы для футера */
+    background: rgba(255, 255, 255, 0.9);
 }
 
 label {
