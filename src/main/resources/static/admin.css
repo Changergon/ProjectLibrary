@@ -40,7 +40,6 @@ main {
     max-width: 1200px;
     width: 90%;
     margin: 0 auto 40px;
-    overflow-x: auto;
 }
 
 /* Стиль для кнопки "Редактировать книги" */
