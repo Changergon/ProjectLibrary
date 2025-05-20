@@ -157,7 +157,7 @@ public class BookService {
         return book.getEntry().getAddedBy().getUsername().equals(username);
     }
 
-    // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\services\BookService.java
+
 
     public void updateBook(Book book) {
         // Здесь вы можете добавить логику для проверки, является ли пользователь преподавателем и добавил ли он эту книгу
