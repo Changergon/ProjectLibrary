@@ -27,6 +27,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/users/register", "/api/users/login", "/", "/register", "/login").permitAll()
+
                         .requestMatchers("/*.css").permitAll()
                         .requestMatchers("/image/**").permitAll()
                         .requestMatchers("/api/books/user/**").authenticated()
