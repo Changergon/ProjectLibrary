@@ -8,10 +8,17 @@ import org.example.library.repositories.BookEntryRepository; // Импортир
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class BookService {
@@ -30,10 +37,27 @@ public class BookService {
     @Autowired
     private FacultyService facultyService; // Внедряем FacultyService
 
-    public List<Book> searchBooks(String title) {
-        logger.info("Searching for books with title containing: {}", title);
-        return bookRepository.findByTitleContaining(title);
+    public Page<Book> searchBooksByTitleAndAuthor(String title, String author, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByTitleContainingAndBookAuthors_Author_LastNameContaining(title, author, pageable);
     }
+
+    public Page<Book> searchBooksByTitle(String title, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByTitleContaining(title, pageable);
+    }
+
+    public Page<Book> searchBooksByAuthor(String author, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByBookAuthors_Author_LastNameContaining(author, pageable);
+    }
+
+    public Page<Book> searchBooks(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByTitleContainingOrBookAuthors_Author_FirstNameContainingOrBookAuthors_Author_LastNameContaining(query, pageable);
+    }
+
+
 
     public Book getBookById(Long bookId) {
         logger.info("Fetching book with ID: {}", bookId);
@@ -84,9 +108,9 @@ public class BookService {
         ebookRepository.save(ebook);
     }
 
-    public List<Book> getAllBooks() {
-        logger.info("Fetching all books");
-        return bookRepository.findAll();
+    public Page<Book> getAllBooks(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size); // Создаем объект Pageable
+        return bookRepository.findAll(pageable); // Используем пагинацию в репозитории
     }
 
     public List<Book> getBooksByFaculty(Faculty faculty) {
@@ -95,30 +119,49 @@ public class BookService {
         return bookRepository.findByFaculty(faculty);
     }
 
-    public List<Book> getBooksForUser (LibraryUser  user) {
+    public List<Book> getBooksForUser(LibraryUser user) {
         logger.info("Fetching books for user: {}", user.getUsername());
+        logger.info("User faculties: {}", user.getFaculties());
 
-        if (user.getFaculties().isEmpty()) {
-            logger.info("User  has no faculties, fetching common books");
-            return bookRepository.findByFacultiesType(FacultyType.COMMON);
-        } else {
-            logger.info("Fetching books for faculties: {}", user.getFaculties());
-            return bookRepository.findByFacultiesIn(user.getFaculties());
+        Set<Faculty> userFaculties = user.getFaculties();
+
+        // Разделяем факультеты на обычные и общедоступные
+        Set<Faculty> regularFaculties = userFaculties.stream()
+                .filter(f -> f.getType() != FacultyType.COMMON)
+                .collect(Collectors.toSet());
+
+        boolean hasCommonFaculty = userFaculties.stream()
+                .anyMatch(f -> f.getType() == FacultyType.COMMON);
+
+        List<Book> books = new ArrayList<>();
+
+        // Получаем книги для обычных факультетов
+        if (!regularFaculties.isEmpty()) {
+            books.addAll(bookRepository.findByFacultiesIn(regularFaculties));
         }
+
+        // Добавляем общедоступные книги, если нужно
+        if (hasCommonFaculty) {
+            books.addAll(bookRepository.findCommonBooks());
+        }
+
+        // Удаляем дубликаты
+        return books.stream()
+                .distinct()
+                .collect(Collectors.toList());
     }
 
-    // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\services\BookService.java
 
     public boolean isBookAddedByUser (Long bookId, String username) {
         Book book = getBookById(bookId);
         return book.getEntry().getAddedBy().getUsername().equals(username);
     }
 
-    // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\services\BookService.java
 
-    public Book updateBook(Book book) {
+
+    public void updateBook(Book book) {
         // Здесь вы можете добавить логику для проверки, является ли пользователь преподавателем и добавил ли он эту книгу
-        return bookRepository.save(book); // Сохраняем обновленную книгу
+        bookRepository.save(book);
     }
 
     public List<Book> getBooksByUserId(Long userId) {
