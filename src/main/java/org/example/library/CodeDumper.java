@@ -1,13 +1,15 @@
 package org.example.library;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class CodeDumper {
+
+    private static final Logger LOGGER = Logger.getLogger(CodeDumper.class.getName());
+    private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(".java", ".html", ".css");
 
     public static void main(String[] args) {
         // Укажите путь к директории с классами и файлами
@@ -19,7 +21,7 @@ public class CodeDumper {
             dumpFiles(dir, writer);
             System.out.println("Код успешно скопирован в " + outputFile);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Ошибка при копировании кода", e);
         }
     }
 
@@ -38,7 +40,7 @@ public class CodeDumper {
 
     private static boolean isSupportedFile(File file) {
         String fileName = file.getName().toLowerCase();
-        return fileName.endsWith(".java") || fileName.endsWith(".html") || fileName.endsWith(".css");
+        return SUPPORTED_EXTENSIONS.stream().anyMatch(fileName::endsWith);
     }
 
     private static void writeFileContent(File file, BufferedWriter writer) throws IOException {
@@ -54,3 +56,4 @@ public class CodeDumper {
         }
     }
 }
+

@@ -31,5 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
-/src/main/resources/Storage/
+
+# Игнорируемые директории и файлы проекта
+/src/main/resources/Storage/ # Старая директория, если больше не используется, можно удалить
+/uploaded-files/ # Новая директория для загруженных файлов
 /output.txt
+

@@ -2,9 +2,11 @@ package org.example.library.controllers;
 
 import org.example.library.models.Book;
 import org.example.library.models.BookEntry;
-import org.example.library.models.LibraryUser ;
+import org.example.library.models.LibraryUser;
 import org.example.library.services.BookService;
 import org.example.library.services.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import java.util.List;
 @RequestMapping("/api/teacher")
 public class TeacherController {
 
+    private final Logger logger = LoggerFactory.getLogger(TeacherController.class);
     @Autowired
     private BookService bookService;
 
@@ -28,6 +31,7 @@ public class TeacherController {
     @PreAuthorize("hasRole('TEACHER')") // Ограничение доступа для преподавателей
     @GetMapping("/books")
     public ResponseEntity<List<Book>> getAllBooks() {
+        logger.trace("getAllBooks");
         List<Book> books = bookService.searchBooks(""); // Получаем все книги, можно добавить фильтрацию
         return ResponseEntity.ok(books);
     }
@@ -36,11 +40,11 @@ public class TeacherController {
     @PostMapping("/add-book")
     public ResponseEntity<Book> addBook(@RequestBody Book newBook, Authentication authentication) {
         // Получаем текущего пользователя
-        LibraryUser  currentUser  = userService.findByUsername(authentication.getName());
+        LibraryUser currentUser = userService.findByUsername(authentication.getName());
 
         // Создаем запись о добавлении книги
         BookEntry bookEntry = new BookEntry();
-        bookEntry.setAddedBy(currentUser );
+        bookEntry.setAddedBy(currentUser);
         bookEntry.setAddedAt(LocalDateTime.now());
 
         // Устанавливаем запись в книгу
@@ -51,8 +55,6 @@ public class TeacherController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(newBook);
     }
-
-
 
     // Другие методы для преподавателя можно добавить здесь
 }

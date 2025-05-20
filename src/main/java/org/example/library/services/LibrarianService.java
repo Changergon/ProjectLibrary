@@ -1,12 +1,14 @@
 package org.example.library.services;
 
 import org.example.library.models.Book;
+import org.example.library.models.BookStatus;
 import org.example.library.models.RentalRequest;
 import org.example.library.models.RentalRequestStatus;
-import org.example.library.models.BookStatus; // Убедитесь, что этот импорт присутствует
 import org.example.library.repositories.BookRepository;
 import org.example.library.repositories.LibraryUserRepository;
 import org.example.library.repositories.RentalRequestRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import java.util.List;
 @Service
 public class LibrarianService {
 
+    private final Logger logger = LoggerFactory.getLogger(LibrarianService.class);
     @Autowired
     private LibraryUserRepository userRepository;
 
@@ -38,6 +41,7 @@ public class LibrarianService {
 
     // Метод для получения списка выданных книг
     public List<Book> getRentedBooks() {
+        logger.debug("getRentedBooks");
         return bookRepository.findRentedBooks(BookStatus.NOT_AVAILABLE); // Передаем статус "Выдано"
     }
 

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:latest  # Используем последнюю версию PostgreSQL
+    image: postgres:16  # Используем конкретную версию PostgresSQL (например, 16)
     container_name: library-postgres  # Имя контейнера
     restart: always
     environment:
@@ -14,3 +14,4 @@ services:
 
 volumes:
   postgres_data:  # Определяем том для хранения данных
+

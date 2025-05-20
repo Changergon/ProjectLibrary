@@ -2,21 +2,23 @@ package org.example.library.services;
 
 import org.example.library.models.DTO.UserRoleUpdateDTO;
 import org.example.library.models.Faculty;
-import org.example.library.models.LibraryUser ;
+import org.example.library.models.LibraryUser;
 import org.example.library.models.Role;
 import org.example.library.repositories.FacultyRepository;
 import org.example.library.repositories.LibraryUserRepository;
 import org.example.library.repositories.RoleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 @Service
 public class AdminService {
 
+    private final Logger logger = LoggerFactory.getLogger(AdminService.class);
     @Autowired
     private LibraryUserRepository userRepository;
 
@@ -27,13 +29,14 @@ public class AdminService {
     private FacultyRepository facultyRepository; // Добавьте это
 
 
-    public LibraryUser  createUser (LibraryUser  user) {
+    public LibraryUser createUser(LibraryUser user) {
         // Роль будет установлена в UserService
+        logger.debug("Method createUser with parameters: user {} ", user);
         return userRepository.save(user);
     }
 
-    public void assignRoleToUser (Long userId, Long roleId) {
-        LibraryUser  user = userRepository.findById(userId).orElse(null);
+    public void assignRoleToUser(Long userId, Long roleId) {
+        LibraryUser user = userRepository.findById(userId).orElse(null);
         Role role = roleRepository.findById(roleId).orElse(null);
 
         if (user == null) {
@@ -52,8 +55,8 @@ public class AdminService {
         System.out.println("Роль " + role.getRoleName() + " была назначена пользователю " + user.getUsername());
     }
 
-    public List<LibraryUser > getAllUsers() {
-        List<LibraryUser > users = userRepository.findAll();
+    public List<LibraryUser> getAllUsers() {
+        List<LibraryUser> users = userRepository.findAll();
         System.out.println("Количество пользователей: " + users.size()); // Вывод количества пользователей
         return users;
     }
@@ -61,7 +64,7 @@ public class AdminService {
 
     public void updateUserRoles(List<UserRoleUpdateDTO> updates) {
         for (UserRoleUpdateDTO update : updates) {
-            LibraryUser  user = userRepository.findById(update.getUserId())
+            LibraryUser user = userRepository.findById(update.getUserId())
                     .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
             // Получение ролей по именам
@@ -77,9 +80,8 @@ public class AdminService {
     }
 
 
-
-    public void assignFacultyToUser (Long userId, Long facultyId) {
-        LibraryUser  user = userRepository.findById(userId).orElse(null);
+    public void assignFacultyToUser(Long userId, Long facultyId) {
+        LibraryUser user = userRepository.findById(userId).orElse(null);
         Faculty faculty = facultyRepository.findById(facultyId).orElse(null);
 
         if (user == null) {
@@ -98,8 +100,8 @@ public class AdminService {
         System.out.println("Факультет " + faculty.getType() + " был назначен пользователю " + user.getUsername());
     }
 
-    public void removeFacultyFromUser (Long userId, Long facultyId) {
-        LibraryUser  user = userRepository.findById(userId).orElse(null);
+    public void removeFacultyFromUser(Long userId, Long facultyId) {
+        LibraryUser user = userRepository.findById(userId).orElse(null);
         Faculty faculty = facultyRepository.findById(facultyId).orElse(null);
 
         if (user == null) {
