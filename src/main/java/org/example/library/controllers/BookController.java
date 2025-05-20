@@ -316,14 +316,14 @@ public class BookController {
 
 // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\controllers\BookController.java
 
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @bookService.isBookAddedByUser (#id, principal.username))")
+    @PreAuthorize("hasRole('ADMIN') || (hasRole('TEACHER') && @bookService.isBookAddedByUser(#id, principal.username))")
     @GetMapping("/edit/{id}")
     public ResponseEntity<BookDTO> editBook(@PathVariable Long id) {
         Book book = bookService.getBookById(id);
         return ResponseEntity.ok(convertToDTO(book));
     }
 
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @bookService.isBookAddedByUser  (#bookId, principal.username))")
+    @PreAuthorize("hasRole('ADMIN') || (hasRole('TEACHER') && @bookService.isBookAddedByUser(#bookId, principal.username))")
     @PostMapping("/update")
     public ResponseEntity<String> updateBook(
             @RequestParam Long bookId,
