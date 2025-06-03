@@ -16,6 +16,8 @@ public class BookDTO {
     private int publicationYear;
     private String description;
     private String publisher;
-    private String status; // Можно использовать строку, чтобы избежать проблем с сериализацией
-    private List<String> authorNames; // Список имен авторов
+    private String status;
+    private List<String> authorNames;
+    private double averageRating; // Добавлено среднее значение рейтинга
+    private Integer userRating; // Рейтинг текущего пользователя (если есть)
 }

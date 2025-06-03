@@ -2,6 +2,8 @@ package org.example.library.services;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.example.library.models.*;
+import org.example.library.models.DTO.BookDTO;
+import org.example.library.repositories.BookRatingRepository;
 import org.example.library.repositories.BookRepository;
 import org.example.library.repositories.EbookRepository;
 import org.example.library.repositories.BookEntryRepository; // Импортируйте BookEntryRepository
@@ -27,6 +29,12 @@ public class BookService {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private BookRatingRepository bookRatingRepository;
+
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
 
     @Autowired
     private EbookRepository ebookRepository;
@@ -55,6 +63,11 @@ public class BookService {
     public Page<Book> searchBooks(String query, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return bookRepository.findByTitleContainingOrBookAuthors_Author_FirstNameContainingOrBookAuthors_Author_LastNameContaining(query, pageable);
+    }
+
+    private Long getCurrentUserId() {
+        var userDetails = customUserDetailsService.getCurrentUser();
+        return userDetails != null ? userDetails.getId() : null;
     }
 
 
@@ -119,9 +132,9 @@ public class BookService {
         return bookRepository.findByFaculty(faculty);
     }
 
-    public List<Book> getBooksForUser(LibraryUser user) {
+    public List<BookDTO> getBooksForUser (LibraryUser  user) {
         logger.info("Fetching books for user: {}", user.getUsername());
-        logger.info("User faculties: {}", user.getFaculties());
+        logger.info("User  faculties: {}", user.getFaculties());
 
         Set<Faculty> userFaculties = user.getFaculties();
 
@@ -146,10 +159,14 @@ public class BookService {
         }
 
         // Удаляем дубликаты
+        books = books.stream().distinct().collect(Collectors.toList());
+
+        // Преобразуем книги в BookDTO и добавляем средние оценки
         return books.stream()
-                .distinct()
+                .map(book -> convertToDTO(book, user.getUserId())) // Используем ваш метод преобразования
                 .collect(Collectors.toList());
     }
+
 
 
     public boolean isBookAddedByUser (Long bookId, String username) {
@@ -168,6 +185,41 @@ public class BookService {
         logger.info("Fetching books added by user with ID: {}", userId);
         return bookRepository.findByAddedById(userId); // Предполагается, что у вас есть соответствующий метод в репозитории
     }
+
+
+    public double calculateAverageRating(Long bookId) {
+        List<BookRating> ratings = bookRatingRepository.findByBookBookId(bookId);
+        if (ratings.isEmpty()) return 0;
+        return ratings.stream().mapToInt(BookRating::getRating).average().orElse(0);
+    }
+
+    public Integer getUserRating(Long bookId, Long userId) {
+        if (userId == null) return null;
+        return bookRatingRepository.findByBookBookIdAndUserUserId(bookId, userId)
+                .map(BookRating::getRating)
+                .orElse(null);
+    }
+
+
+    public BookDTO convertToDTO(Book book, Long currentUserId) {
+        List<String> authorNames = book.getBookAuthors().stream()
+                .map(ba -> ba.getAuthor().getFirstName() + " " + ba.getAuthor().getLastName())
+                .collect(Collectors.toList());
+
+        return new BookDTO(
+                book.getBookId(),
+                book.getTitle(),
+                book.getIsbn(),
+                book.getPublicationYear(),
+                book.getDescription(),
+                book.getPublisher(),
+                book.getStatus().name(),
+                authorNames,
+                calculateAverageRating(book.getBookId()),
+                getUserRating(book.getBookId(), currentUserId)
+        );
+    }
+
 
 
 }

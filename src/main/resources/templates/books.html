@@ -29,6 +29,14 @@
                 <option value="author">По автору</option>
             </select>
         </div>
+        <div class="rating-filter">
+            <label>Фильтр по рейтингу:</label>
+            <select id="ratingFilter">
+                <option value="">Все</option>
+                <option value="4">4+ звезды</option>
+                <option value="3">3+ звезды</option>
+            </select>
+        </div>
     </section>
 
     <main>
@@ -76,16 +84,18 @@
                             const card = document.createElement('div');
                             card.className = 'book-card';
                             card.innerHTML = `
-                    <div class="book-card-content">
-                        <div class="book-title">${book.title}</div>
-                        <div class="book-authors">${book.authorNames.join(', ')}</div>
-                        <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
-                        <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
-                        <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
-                        <div class="book-description">${book.description || 'Описание отсутствует'}</div>
-                    </div>
-                    <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
-                `;
+    <div class="book-card-content">
+        <div class="book-title">${book.title}</div>
+        <div class="book-authors">${book.authorNames.join(', ')}</div>
+        <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
+        <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+        <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
+        <div class="book-meta"><strong>Средний рейтинг:</strong> ${book.averageRating.toFixed(1)} ⭐</div>
+        <div class="book-description">${book.description || 'Описание отсутствует'}</div>
+    </div>
+    <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
+`;
+
                             booksContainer.appendChild(card);
                         });
                     } else {

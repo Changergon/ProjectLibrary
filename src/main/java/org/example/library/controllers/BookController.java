@@ -48,22 +48,13 @@ public class BookController {
 
 
     // Получение всех книг
-    @GetMapping("/all")
-    public ResponseEntity<Page<BookDTO>> getAllBooks(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<Book> books = bookService.getAllBooks(page, size); // Получаем страницу книг
-        Page<BookDTO> bookDTOs = books.map(this::convertToDTO); // Преобразуем в DTO
-        return ResponseEntity.ok(bookDTOs);
-    }
-
-
-    // Поиск книг
     @GetMapping("/search")
     public ResponseEntity<Page<BookDTO>> searchBooks(
             @RequestParam(required = false) String query,
+            @RequestParam(required = false) Double minRating,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
         Page<Book> books;
 
         if (query != null && !query.isEmpty()) {
@@ -71,9 +62,29 @@ public class BookController {
         } else {
             books = bookService.getAllBooks(page, size);
         }
-        Page<BookDTO> bookDTOs = books.map(this::convertToDTO);
+
+        List<Book> filteredBooks = books.getContent();
+
+        if (minRating != null) {
+            filteredBooks = filteredBooks.stream()
+                    .filter(book -> bookService.calculateAverageRating(book.getBookId()) >= minRating)
+                    .toList();
+        }
+
+        Long currentUserId = customUserDetailsService.getCurrentUser() != null
+                ? customUserDetailsService.getCurrentUser().getId()
+                : null;
+
+        List<BookDTO> dtos = filteredBooks.stream()
+                .map(book -> bookService.convertToDTO(book, currentUserId))
+                .toList();
+
+        Page<BookDTO> bookDTOs = new PageImpl<>(dtos, books.getPageable(), filteredBooks.size());
+
         return ResponseEntity.ok(bookDTOs);
     }
+
+
 
 
 
@@ -81,8 +92,15 @@ public class BookController {
     @GetMapping("/{id}")
     public ResponseEntity<BookDTO> getBookById(@PathVariable Long id) {
         Book book = bookService.getBookById(id);
-        return book != null ? ResponseEntity.ok(convertToDTO(book)) : ResponseEntity.notFound().build();
+        if (book == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Long currentUserId = customUserDetailsService.getCurrentUser () != null
+                ? customUserDetailsService.getCurrentUser ().getId()
+            : null;
+        return ResponseEntity.ok(convertToDTO(book, currentUserId));
     }
+
 
 
 
@@ -238,7 +256,8 @@ public class BookController {
     }
 
     // Преобразование книги в DTO
-    private BookDTO convertToDTO(Book book) {
+    // В контроллере
+    private BookDTO convertToDTO(Book book, Long currentUserId) {
         List<String> authorNames = book.getBookAuthors().stream()
                 .map(bookAuthor -> bookAuthor.getAuthor().getFirstName() + " " + bookAuthor.getAuthor().getLastName())
                 .collect(Collectors.toList());
@@ -251,12 +270,16 @@ public class BookController {
                 book.getDescription(),
                 book.getPublisher(),
                 book.getStatus().name(),
-                authorNames
+                authorNames,
+                bookService.calculateAverageRating(book.getBookId()),
+                bookService.getUserRating(book.getBookId(), currentUserId)
         );
     }
 
+
+
     @GetMapping("/user/{userId}")
-    public ResponseEntity<Page<BookDTO>> getBooksForUser(
+    public ResponseEntity<Page<BookDTO>> getBooksForUser (
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -264,64 +287,63 @@ public class BookController {
             @RequestParam(required = false, defaultValue = "title") String sort,
             @RequestParam(required = false, defaultValue = "asc") String direction) {
 
-        LibraryUser user = userService.findById(userId);
+        LibraryUser  user = userService.findById(userId);
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
 
-        List<Book> books = bookService.getBooksForUser(user);
+        List<BookDTO> bookDTOs = bookService.getBooksForUser (user);
 
-        // 🔎 Фильтрация (по названию или автору)
+        // Фильтрация
         if (filter != null && !filter.isEmpty()) {
             String lowerCaseFilter = filter.toLowerCase();
-            books = books.stream().filter(book ->
-                    book.getTitle().toLowerCase().contains(lowerCaseFilter) ||
-                            book.getBookAuthors().stream()
-                                    .map(bookAuthor -> (bookAuthor.getAuthor().getFirstName() + " " + bookAuthor.getAuthor().getLastName()).toLowerCase())
+            bookDTOs = bookDTOs.stream().filter(bookDTO ->
+                    bookDTO.getTitle().toLowerCase().contains(lowerCaseFilter) ||
+                            bookDTO.getAuthorNames().stream()
+                                    .map(String::toLowerCase) // Приведение к нижнему регистру
                                     .anyMatch(authorName -> authorName.contains(lowerCaseFilter))
             ).collect(Collectors.toList());
         }
 
-
-        // ↕ Сортировка
-        // ↕ Сортировка
-        Comparator<Book> comparator = switch (sort) {
-            case "year" -> Comparator.comparing(Book::getPublicationYear);
-            case "title" -> Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
-            case "author" -> Comparator.comparing(book ->
-                    book.getBookAuthors().stream()
-                            .map(bookAuthor -> bookAuthor.getAuthor().getFirstName() + " " + bookAuthor.getAuthor().getLastName())
-                            .collect(Collectors.joining(" ")), String.CASE_INSENSITIVE_ORDER);
-            case "publisher" -> Comparator.comparing(Book::getPublisher, String.CASE_INSENSITIVE_ORDER);
-            default -> Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+        // Сортировка
+        Comparator<BookDTO> comparator = switch (sort) {
+            case "year" -> Comparator.comparing(BookDTO::getPublicationYear);
+            case "title" -> Comparator.comparing(BookDTO::getTitle, String.CASE_INSENSITIVE_ORDER);
+            case "author" -> Comparator.comparing(bookDTO ->
+                    String.join(", ", bookDTO.getAuthorNames()), String.CASE_INSENSITIVE_ORDER);
+            case "publisher" -> Comparator.comparing(BookDTO::getPublisher, String.CASE_INSENSITIVE_ORDER);
+            default -> Comparator.comparing(BookDTO::getTitle, String.CASE_INSENSITIVE_ORDER);
         };
 
-
-        if (direction.equalsIgnoreCase("desc")) {
+        if ("desc".equalsIgnoreCase(direction)) {
             comparator = comparator.reversed();
         }
 
-        books.sort(comparator);
+        bookDTOs.sort(comparator);
 
-        //  Пагинация
+        // Пагинация
         int start = (int) PageRequest.of(page, size).getOffset();
-        int end = Math.min((start + size), books.size());
-        Page<Book> bookPage = new PageImpl<>(books.subList(start, end), PageRequest.of(page, size), books.size());
+        int end = Math.min(start + size, bookDTOs.size());
+        Page<BookDTO> bookPage = new PageImpl<>(bookDTOs.subList(start, end), PageRequest.of(page, size), bookDTOs.size());
 
-        Page<BookDTO> bookDTOs = bookPage.map(this::convertToDTO);
-        return ResponseEntity.ok(bookDTOs);
+        return ResponseEntity.ok(bookPage);
     }
 
 
 
-// Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\controllers\BookController.java
 
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @bookService.isBookAddedByUser (#id, principal.username))")
     @GetMapping("/edit/{id}")
     public ResponseEntity<BookDTO> editBook(@PathVariable Long id) {
         Book book = bookService.getBookById(id);
-        return ResponseEntity.ok(convertToDTO(book));
+        if (book == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Long currentUserId = customUserDetailsService.getCurrentUser() != null
+                ? customUserDetailsService.getCurrentUser().getId()
+                : null;
+        return ResponseEntity.ok(convertToDTO(book, currentUserId));
     }
+
 
     @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @bookService.isBookAddedByUser  (#bookId, principal.username))")
     @PostMapping("/update")
