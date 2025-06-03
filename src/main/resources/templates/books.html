@@ -57,7 +57,7 @@
             let totalPages = 1; // общее количество страниц
             let searchQuery=''
 
-            async function displayBooksForUser(page = 1, query = searchQuery, sort = document.getElementById('sortSelect').value) {
+            async function displayBooksForUser (page = 1, query = searchQuery, sort = document.getElementById('sortSelect').value, rating = document.getElementById('ratingFilter').value) {
                 const bookList = document.getElementById('bookList');
                 bookList.innerHTML = '';
                 document.getElementById('loading').style.display = 'block';
@@ -66,6 +66,7 @@
                     let url = `/api/books/user/${currentUserId}?page=${page - 1}&size=${pageSize}`;
                     if (query) url += `&query=${encodeURIComponent(query)}`; // Добавляем параметр поиска
                     if (sort) url += `&sort=${sort}`; // Добавляем параметр сортировки
+                    if (rating) url += `&minRating=${rating}`; // Добавляем параметр фильтрации по рейтингу
 
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`Ошибка: ${response.statusText}`);
@@ -84,17 +85,17 @@
                             const card = document.createElement('div');
                             card.className = 'book-card';
                             card.innerHTML = `
-    <div class="book-card-content">
-        <div class="book-title">${book.title}</div>
-        <div class="book-authors">${book.authorNames.join(', ')}</div>
-        <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
-        <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
-        <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
-        <div class="book-meta"><strong>Средний рейтинг:</strong> ${book.averageRating.toFixed(1)} ⭐</div>
-        <div class="book-description">${book.description || 'Описание отсутствует'}</div>
-    </div>
-    <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
-`;
+                    <div class="book-card-content">
+                        <div class="book-title">${book.title}</div>
+                        <div class="book-authors">${book.authorNames.join(', ')}</div>
+                        <div class="book-meta"><strong>ISBN:</strong> ${book.isbn}</div>
+                        <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+                        <div class="book-meta"><strong>Издатель:</strong> ${book.publisher}</div>
+                        <div class="book-meta"><strong>Средний рейтинг:</strong> ${book.averageRating.toFixed(1)} ⭐</div>
+                        <div class="book-description">${book.description || 'Описание отсутствует'}</div>
+                    </div>
+                    <a href="/books/read?id=${book.bookId}" class="read-button">Читать</a>
+                `;
 
                             booksContainer.appendChild(card);
                         });
@@ -108,6 +109,10 @@
                     document.getElementById('loading').style.display = 'none';
                 }
             }
+
+
+
+
             async function searchBooks(query) {
                 const bookList = document.getElementById('bookList');
                 bookList.innerHTML = '';
@@ -252,6 +257,13 @@
                     }
                 }
             });
+
+            document.getElementById('ratingFilter').addEventListener('change', () => {
+                currentPage = 1; // Сбрасываем на первую страницу при изменении фильтра
+                const ratingValue = document.getElementById('ratingFilter').value;
+                displayBooksForUser (currentPage, searchQuery, document.getElementById('sortSelect').value, ratingValue);
+            });
+
 
 
             async function checkSession() {

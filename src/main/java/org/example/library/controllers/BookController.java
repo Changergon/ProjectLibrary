@@ -279,13 +279,14 @@ public class BookController {
 
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<Page<BookDTO>> getBooksForUser (
+    public ResponseEntity<Page<BookDTO>> getBooksForUser  (
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String filter,
             @RequestParam(required = false, defaultValue = "title") String sort,
-            @RequestParam(required = false, defaultValue = "asc") String direction) {
+            @RequestParam(required = false, defaultValue = "asc") String direction,
+            @RequestParam(required = false) Integer minRating) { // Добавляем параметр minRating
 
         LibraryUser  user = userService.findById(userId);
         if (user == null) {
@@ -294,7 +295,7 @@ public class BookController {
 
         List<BookDTO> bookDTOs = bookService.getBooksForUser (user);
 
-        // Фильтрация
+        // Фильтрация по названию и авторам
         if (filter != null && !filter.isEmpty()) {
             String lowerCaseFilter = filter.toLowerCase();
             bookDTOs = bookDTOs.stream().filter(bookDTO ->
@@ -303,6 +304,13 @@ public class BookController {
                                     .map(String::toLowerCase) // Приведение к нижнему регистру
                                     .anyMatch(authorName -> authorName.contains(lowerCaseFilter))
             ).collect(Collectors.toList());
+        }
+
+        // Фильтрация по рейтингу
+        if (minRating != null) {
+            bookDTOs = bookDTOs.stream()
+                    .filter(bookDTO -> bookDTO.getAverageRating() >= minRating)
+                    .collect(Collectors.toList());
         }
 
         // Сортировка
@@ -328,6 +336,7 @@ public class BookController {
 
         return ResponseEntity.ok(bookPage);
     }
+
 
 
 
