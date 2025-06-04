@@ -47,14 +47,14 @@
     const pageSize = 10;
     let searchQuery = ''; // Переменная для хранения поискового запроса
 
-    // Функция для загрузки книг
+    // Функция для загрузки книг с учётом пользователя и роли
     async function loadBooks() {
         try {
             let url;
             if (searchQuery) {
-                url = `/api/books/search?query=${encodeURIComponent(searchQuery)}&page=${currentPage - 1}&size=${pageSize}`;
+                url = `/api/books/editable?query=${encodeURIComponent(searchQuery)}&userId=${currentUserId}&page=${currentPage - 1}&size=${pageSize}`;
             } else {
-                url = `/api/books/all?page=${currentPage - 1}&size=${pageSize}`;
+                url = `/api/books/editable?userId=${currentUserId}&page=${currentPage - 1}&size=${pageSize}`;
             }
 
             console.log("Отправляемый запрос:", url);
@@ -80,23 +80,28 @@
         }
     }
 
-    // Функция для отображения книг в таблице
+    // Функция для отображения книг с проверкой прав на редактирование
     function renderBooks(books) {
         const tableBody = document.getElementById('booksTableBody');
         tableBody.innerHTML = '';
 
         books.forEach(book => {
             const author = book.authorNames?.[0] || '—';
+            // Предполагается, что сервер возвращает поле addedById в DTO
+            const canEdit = isAdmin || (book.addedById === currentUserId);
+            const editLink = canEdit ? `<a href="/books/edit?id=${book.bookId}">Редактировать</a>` : '—';
+
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${book.title}</td>
-                <td>${author}</td>
-                <td>${book.publicationYear || '—'}</td>
-                <td><a href="/books/edit?id=${book.bookId}">Редактировать</a></td>
-            `;
+            <td>${book.title}</td>
+            <td>${author}</td>
+            <td>${book.publicationYear || '—'}</td>
+            <td>${editLink}</td>
+        `;
             tableBody.appendChild(row);
         });
     }
+
 
     // Функция для обновления пагинации
     function updatePagination(totalPages) {
@@ -150,8 +155,39 @@
         loadBooks();
     });
 
-    // Загрузка книг при загрузке страницы
-    window.onload = loadBooks;
+
+
+    let currentUserId = null; // Идентификатор текущего пользователя
+    let isAdmin = false; // Флаг для проверки, является ли пользователь администратором
+
+    // Функция для загрузки информации о текущем пользователе
+    async function loadCurrentUser () {
+        try {
+            const response = await fetch('/api/users/current');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const userData = await response.json();
+            currentUserId = userData.userId;
+            isAdmin = userData.roles.includes('ADMIN');
+        } catch (error) {
+            console.error("Ошибка загрузки пользователя:", error);
+        }
+    }
+
+
+    window.onload = async () => {
+        await loadCurrentUser(); // загрузка currentUserId и isAdmin
+        if (currentUserId) {
+            await loadBooks(); // вызываем только после того, как currentUserId определён
+        } else {
+            console.error("Не удалось определить текущего пользователя. Книги не загружены.");
+            document.getElementById('booksTableBody').innerHTML = `
+            <tr><td colspan="4">Ошибка: не удалось получить данные пользователя</td></tr>
+        `;
+        }
+    };
+
+
 </script>
 
 </body>

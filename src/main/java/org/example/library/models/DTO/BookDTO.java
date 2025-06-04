@@ -20,4 +20,5 @@ public class BookDTO {
     private List<String> authorNames;
     private double averageRating; // Добавлено среднее значение рейтинга
     private Integer userRating; // Рейтинг текущего пользователя (если есть)
+    private Long addedById;
 }

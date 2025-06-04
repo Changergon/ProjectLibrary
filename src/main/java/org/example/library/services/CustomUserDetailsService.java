@@ -1,5 +1,6 @@
 package org.example.library.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.example.library.models.LibraryUser ;
 import org.example.library.models.MyUserDetails;
 import org.example.library.repositories.LibraryUserRepository;
@@ -40,5 +41,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         return null;
     }
 
+
+    public LibraryUser  getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+    }
 
 }

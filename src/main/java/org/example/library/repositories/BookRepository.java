@@ -47,7 +47,10 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     // Метод для получения книг, добавленных конкретным пользователем через BookEntry
     @Query("SELECT be.book FROM BookEntry be WHERE be.addedBy.userId = :userId")
-    List<Book> findByAddedById(Long userId);
+    Page<Book> findByAddedById(@Param("userId") Long userId, Pageable pageable);
+
 
     Page<Book> findAll(Pageable pageable); // Метод для пагинации
+
+
 }

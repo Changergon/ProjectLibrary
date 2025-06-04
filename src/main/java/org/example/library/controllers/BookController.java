@@ -1,6 +1,9 @@
 package org.example.library.controllers;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.example.library.exceptions.ForbiddenAccessException;
+import org.example.library.exceptions.ResourceNotFoundException;
+import org.example.library.exceptions.UnauthorizedAccessException;
 import org.example.library.models.DTO.BookDTO;
 import org.example.library.models.*;
 import org.example.library.services.*;
@@ -104,9 +107,13 @@ public class BookController {
         return ResponseEntity.ok(bookDTOs);
     }
 
-
-
-
+    @GetMapping("/editable")
+    public ResponseEntity<Page<BookDTO>> getEditableBooks(@RequestParam Long userId,
+                                                          @RequestParam int page,
+                                                          @RequestParam int size) {
+        Page<Book> books = bookService.getBooksForEditing(userId, page, size);
+        return ResponseEntity.ok(books.map(book -> bookService.convertToDTO(book, userId)));
+    }
 
 
     // Получение книги по ID
@@ -116,11 +123,12 @@ public class BookController {
         if (book == null) {
             return ResponseEntity.notFound().build();
         }
-        Long currentUserId = customUserDetailsService.getCurrentUser () != null
-                ? customUserDetailsService.getCurrentUser ().getId()
-            : null;
-        return ResponseEntity.ok(convertToDTO(book, currentUserId));
+        Long currentUserId = customUserDetailsService.getCurrentUser() != null
+                ? customUserDetailsService.getCurrentUser().getId()
+                : null;
+        return ResponseEntity.ok(bookService.convertToDTO(book, currentUserId));
     }
+
 
 
 
@@ -276,26 +284,7 @@ public class BookController {
         return ResponseEntity.ok().build();
     }
 
-    // Преобразование книги в DTO
-    // В контроллере
-    private BookDTO convertToDTO(Book book, Long currentUserId) {
-        List<String> authorNames = book.getBookAuthors().stream()
-                .map(bookAuthor -> bookAuthor.getAuthor().getFirstName() + " " + bookAuthor.getAuthor().getLastName())
-                .collect(Collectors.toList());
 
-        return new BookDTO(
-                book.getBookId(),
-                book.getTitle(),
-                book.getIsbn(),
-                book.getPublicationYear(),
-                book.getDescription(),
-                book.getPublisher(),
-                book.getStatus().name(),
-                authorNames,
-                bookService.calculateAverageRating(book.getBookId()),
-                bookService.getUserRating(book.getBookId(), currentUserId)
-        );
-    }
 
 
 
@@ -364,15 +353,21 @@ public class BookController {
 
     @GetMapping("/edit/{id}")
     public ResponseEntity<BookDTO> editBook(@PathVariable Long id) {
-        Book book = bookService.getBookById(id);
-        if (book == null) {
+        Long currentUserId = customUserDetailsService.getCurrentUser () != null
+                ? customUserDetailsService.getCurrentUser ().getId()
+            : null;
+
+        try {
+            BookDTO bookDTO = bookService.editBook(id, currentUserId);
+            return ResponseEntity.ok(bookDTO);
+        } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
+        } catch (UnauthorizedAccessException | ForbiddenAccessException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        Long currentUserId = customUserDetailsService.getCurrentUser() != null
-                ? customUserDetailsService.getCurrentUser().getId()
-                : null;
-        return ResponseEntity.ok(convertToDTO(book, currentUserId));
     }
+
+
 
 
     @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @bookService.isBookAddedByUser  (#bookId, principal.username))")
@@ -495,8 +490,9 @@ public class BookController {
                 ? customUserDetailsService.getCurrentUser().getId()
                 : null;
 
-        return ResponseEntity.ok(convertToDTO(book, currentUserId));
+        return ResponseEntity.ok(bookService.convertToDTO(book, currentUserId));
     }
+
 
 
 

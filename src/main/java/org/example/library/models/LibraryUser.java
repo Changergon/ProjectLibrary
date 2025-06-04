@@ -2,8 +2,11 @@ package org.example.library.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -87,5 +90,12 @@ public class LibraryUser  {
     @JoinColumn(name = "last_read_book_id")
     private Book lastReadBook;
 
+
+
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
+                .collect(Collectors.toSet());
+    }
 
 }
