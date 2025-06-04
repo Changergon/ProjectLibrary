@@ -1,5 +1,6 @@
 package org.example.library.controllers;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.example.library.models.DTO.BookDTO;
 import org.example.library.models.*;
 import org.example.library.services.*;
@@ -8,7 +9,6 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -437,5 +437,46 @@ public class BookController {
 
         return ResponseEntity.ok("Книга успешно обновлена!");
     }
+
+    @PostMapping("/user/{userId}/last-read/{bookId}")
+    public ResponseEntity<Void> setLastReadBook(
+            @PathVariable Long userId,
+            @PathVariable Long bookId) {
+
+        Book book = bookService.getBookById(bookId);
+        if (book == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            userService.updateLastReadBook(userId, bookId);
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+    @GetMapping("/user/{userId}/last-read")
+    public ResponseEntity<BookDTO> getLastReadBook(@PathVariable Long userId) {
+        LibraryUser user = userService.findById(userId);
+        Book lastReadBook = user.getLastReadBook();
+        if (lastReadBook == null) {
+            return ResponseEntity.noContent().build();
+        }
+        Book book = bookService.getBookById(lastReadBook.getBookId());
+        if (book == null) {
+            return ResponseEntity.noContent().build();
+        }
+
+
+        Long currentUserId = customUserDetailsService.getCurrentUser() != null
+                ? customUserDetailsService.getCurrentUser().getId()
+                : null;
+
+        return ResponseEntity.ok(convertToDTO(book, currentUserId));
+    }
+
+
 
 }

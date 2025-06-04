@@ -1,10 +1,7 @@
 package org.example.library.models;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.*;
 
@@ -82,4 +79,13 @@ public class LibraryUser  {
         return roles.stream()
                 .anyMatch(role -> role.getRoleName().equals(roleName));
     }
+
+
+    @Getter
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_read_book_id")
+    private Book lastReadBook;
+
+
 }
