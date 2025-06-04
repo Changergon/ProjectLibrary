@@ -32,8 +32,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/books/user/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/teacher/**").hasRole("TEACHER")
-                        .requestMatchers("/books/edit").hasAnyRole("TEACHER", "ADMIN") // Изменено здесь
+                        .requestMatchers("/books/edit").hasAnyRole("TEACHER", "ADMIN")
                         .requestMatchers("/api/student/**").hasRole("STUDENT")
+                        .requestMatchers("/librarian/**").hasAnyRole("LIBRARIAN", "ADMIN")  // добавлено
                         .anyRequest().authenticated()
                 )
                 // Включите CSRF защиту

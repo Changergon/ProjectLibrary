@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Добавить физическую копию книги</title>
+</head>
+<body>
+<h1>Добавить физическую копию книги</h1>
+
+<form id="addCopyForm">
+    <label for="bookId">ID книги:</label>
+    <input type="number" id="bookId" name="bookId" required /><br/><br/>
+
+    <label for="rowNumber">Номер ряда:</label>
+    <input type="number" id="rowNumber" name="rowNumber" required /><br/><br/>
+
+    <label for="shelfNumber">Номер полки:</label>
+    <input type="number" id="shelfNumber" name="shelfNumber" required /><br/><br/>
+
+    <label for="positionNumber">Номер позиции:</label>
+    <input type="number" id="positionNumber" name="positionNumber" required /><br/><br/>
+
+    <button type="button" onclick="submitForm()">Добавить</button>
+</form>
+
+<script>
+    async function submitForm() {
+        const form = document.getElementById('addCopyForm');
+        const data = {
+            bookId: Number(form.bookId.value),
+            rowNumber: Number(form.rowNumber.value),
+            shelfNumber: Number(form.shelfNumber.value),
+            positionNumber: Number(form.positionNumber.value)
+        };
+
+        try {
+            const response = await fetch('/api/physical-copies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('Физическая копия успешно добавлена!');
+                form.reset();
+            } else {
+                const errorText = await response.text();
+                alert('Ошибка: ' + errorText);
+            }
+        } catch (err) {
+            alert('Ошибка: ' + err.message);
+        }
+    }
+</script>
+
+</body>
+</html>
