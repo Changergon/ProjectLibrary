@@ -84,6 +84,27 @@ public class BookController {
         return ResponseEntity.ok(bookDTOs);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<Page<BookDTO>> getAllBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<Book> books = bookService.getAllBooks(page, size);
+
+        Long currentUserId = customUserDetailsService.getCurrentUser() != null
+                ? customUserDetailsService.getCurrentUser().getId()
+                : null;
+
+        List<BookDTO> dtos = books.stream()
+                .map(book -> bookService.convertToDTO(book, currentUserId))
+                .toList();
+
+        Page<BookDTO> bookDTOs = new PageImpl<>(dtos, books.getPageable(), books.getTotalElements());
+
+        return ResponseEntity.ok(bookDTOs);
+    }
+
+
 
 
 
