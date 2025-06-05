@@ -287,4 +287,8 @@ public class BookService {
         return Optional.ofNullable(bookEntryRepository.findByBook(book));
     }
 
+    public Page<Book> getBooksByAuthor(Long authorId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByBookAuthors_Author_AuthorId(authorId, pageable);
+    }
 }

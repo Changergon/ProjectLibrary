@@ -1,5 +1,6 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,5 +27,6 @@ public class Author {
     private String lastName;
 
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<BookAuthor> bookAuthors; // Связь с BookAuthor
 }

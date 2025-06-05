@@ -53,4 +53,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     Page<Book> findAll(Pageable pageable); // Метод для пагинации
 
 
+    @Query("SELECT DISTINCT b FROM Book b JOIN b.bookAuthors ba WHERE ba.author.authorId = :authorId")
+    Page<Book> findByBookAuthors_Author_AuthorId(@Param("authorId") Long authorId, Pageable pageable);
 }

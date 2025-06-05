@@ -22,6 +22,10 @@
             <button id="searchButton">Поиск</button>
         </div>
         <div class="filters-container">
+            <select id="authorFilter">
+                <option value="">Все авторы</option>
+                <!-- Авторы будут добавлены через JavaScript -->
+            </select>
             <select id="sortSelect">
                 <option value="">Сортировать по...</option>
                 <option value="title">По названию</option>
@@ -62,14 +66,49 @@
             let totalPages = 1; // общее количество страниц
             let searchQuery=''
 
+            let selectedAuthorId = null;
+
+            async function loadAuthors() {
+                try {
+                    const response = await fetch('/api/authors');
+                    if (response.ok) {
+                        const authors = await response.json();
+                        const authorFilter = document.getElementById('authorFilter');
+
+                        authors.forEach(author => {
+                            const option = document.createElement('option');
+                            option.value = author.authorId;
+                            option.textContent = `${author.firstName} ${author.lastName}`;
+                            authorFilter.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error("Ошибка при загрузке авторов:", error);
+                }
+            }
+
+            document.getElementById('authorFilter').addEventListener('change', (event) => {
+                selectedAuthorId = event.target.value ? Number(event.target.value) : null;
+                currentPage = 1;
+                displayBooksForUser(currentPage);
+            });
+
+
             async function displayBooksForUser(page = 1, query = searchQuery, sort = document.getElementById('sortSelect').value, rating = document.getElementById('ratingFilter').value) {
                 const bookList = document.getElementById('bookList');
                 bookList.innerHTML = '';
                 document.getElementById('loading').style.display = 'block';
 
                 try {
-                    let url = `/api/books/user/${currentUserId}?page=${page - 1}&size=${pageSize}`;
-                    if (query) url += `&query=${encodeURIComponent(query)}`;
+                    let url;
+                    if (selectedAuthorId) {
+                        url = `/api/books/by-author/${selectedAuthorId}?page=${page - 1}&size=${pageSize}`;
+                    } else if (query) {
+                        url = `/api/books/search?query=${encodeURIComponent(query)}&userId=${currentUserId}&page=${page - 1}&size=${pageSize}`;
+                    } else {
+                        url = `/api/books/user/${currentUserId}?page=${page - 1}&size=${pageSize}`;
+                    }
+
                     if (sort) url += `&sort=${sort}`;
                     if (rating) url += `&minRating=${rating}`;
 
@@ -80,9 +119,6 @@
                     totalPages = data.totalPages || 1;
 
                     updatePaginationButtons();
-
-                    const booksContainer = document.getElementById('bookList');
-                    booksContainer.innerHTML = '';
 
                     if (data.content.length > 0) {
                         data.content.forEach(book => {
@@ -121,10 +157,10 @@
                             });
                             card.appendChild(readButton);
 
-                            booksContainer.appendChild(card);
+                            bookList.appendChild(card);
                         });
                     } else {
-                        booksContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Книги не найдены.</p>';
+                        bookList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Книги не найдены.</p>';
                     }
                 } catch (error) {
                     console.error("Ошибка при загрузке книг:", error);
@@ -332,12 +368,14 @@
                 }
             }
 
+            // Добавим вызов loadAuthors в window.onload
             window.onload = async function () {
                 await checkSession();
-                const user = await fetchCurrentUser ();
+                const user = await fetchCurrentUser();
                 if (user) {
-                    await displayBooksForUser (currentPage);
-                    await fetchLastReadBook(); // Получаем последнюю читаемую книгу
+                    await loadAuthors(); // Загружаем список авторов
+                    await displayBooksForUser(currentPage);
+                    await fetchLastReadBook();
                 }
             };
 
