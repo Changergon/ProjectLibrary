@@ -1,10 +1,10 @@
 package org.example.library.services;
 
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.example.library.exceptions.UserAlreadyExistsException;
-import org.example.library.models.Faculty;
-import org.example.library.models.FacultyType;
-import org.example.library.models.LibraryUser ;
-import org.example.library.models.Role;
+import org.example.library.models.*;
+import org.example.library.repositories.BookRepository;
 import org.example.library.repositories.FacultyRepository; // Импортируйте FacultyRepository
 import org.example.library.repositories.LibraryUserRepository;
 import org.example.library.repositories.RoleRepository;
@@ -28,6 +28,9 @@ public class UserService {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private BookRepository bookRepository;
 
     @Autowired
     private FacultyRepository facultyRepository; // Добавьте зависимость
@@ -102,5 +105,19 @@ public class UserService {
     public LibraryUser findById(Long userId) {
         return userRepository.findById(userId).orElse(null);
     }
+
+    @Transactional
+    public void updateLastReadBook(Long userId, Long bookId) {
+        logger.info("Обновление последней прочитанной книги для пользователя с ID: {}", userId);
+        LibraryUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        user.setLastReadBook(book);
+        userRepository.save(user); // Явное сохранение для проверки
+        logger.info("Последняя прочитанная книга для пользователя {} обновлена на книгу с ID: {}", userId, bookId);
+    }
+
+
 
 }

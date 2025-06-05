@@ -5,10 +5,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.example.library.models.DTO.UserDTO;
 import org.example.library.models.DTO.UserLoginDTO;
 import org.example.library.models.DTO.UserRegistrationDTO;
 import org.example.library.models.LibraryUser ;
 import org.example.library.models.Role;
+import org.example.library.services.FacultyService;
 import org.example.library.services.UserService;
 import org.example.library.exceptions.UserAlreadyExistsException;
 import org.slf4j.Logger;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.example.library.repositories.RoleRepository;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -40,6 +43,9 @@ public class UserController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private FacultyService facultyService;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
@@ -114,19 +120,54 @@ public class UserController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity<LibraryUser > getCurrentUser () {
+    public ResponseEntity<UserDTO> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
             String username = authentication.getName();
+            logger.info("Получение текущего пользователя: {}", username);
             LibraryUser user = userService.findByUsername(username);
             if (user != null) {
-                return ResponseEntity.ok(user);
+                UserDTO userDTO = convertToUserDTO(user);
+                return ResponseEntity.ok(userDTO);
             } else {
+                logger.warn("Пользователь не найден: {}", username);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
         }
+        logger.warn("Пользователь не аутентифицирован");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
     }
+
+
+    // Метод для преобразования LibraryUser  в UserDTO
+    private UserDTO convertToUserDTO(LibraryUser  user) {
+        UserDTO userDTO = new UserDTO();
+        userDTO.setUserId(user.getUserId());
+        userDTO.setUsername(user.getUsername());
+        userDTO.setEmail(user.getEmail());
+
+        // Получаем роли пользователя
+        List<String> roleNames = user.getRoles().stream()
+                .map(Role::getRoleName)
+                .collect(Collectors.toList());
+        userDTO.setRoles(roleNames);
+
+        // Получаем факультеты
+        List<Map<String, Object>> faculties = user.getFaculties().stream()
+                .map(faculty -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("facultyId", faculty.getFacultyId());
+                    String facultyName = facultyService.getFacultyDisplayName(faculty);
+                    map.put("facultyName", facultyName != null ? facultyName : "");
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+        userDTO.setFaculties(faculties);
+
+        return userDTO;
+    }
+
 
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {

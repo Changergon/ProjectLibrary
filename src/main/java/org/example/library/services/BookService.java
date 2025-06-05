@@ -1,7 +1,12 @@
 package org.example.library.services;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.example.library.exceptions.ForbiddenAccessException;
+import org.example.library.exceptions.ResourceNotFoundException;
+import org.example.library.exceptions.UnauthorizedAccessException;
 import org.example.library.models.*;
+import org.example.library.models.DTO.BookDTO;
+import org.example.library.repositories.BookRatingRepository;
 import org.example.library.repositories.BookRepository;
 import org.example.library.repositories.EbookRepository;
 import org.example.library.repositories.BookEntryRepository; // Импортируйте BookEntryRepository
@@ -14,10 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +29,12 @@ public class BookService {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private BookRatingRepository bookRatingRepository;
+
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
 
     @Autowired
     private EbookRepository ebookRepository;
@@ -55,6 +63,11 @@ public class BookService {
     public Page<Book> searchBooks(String query, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return bookRepository.findByTitleContainingOrBookAuthors_Author_FirstNameContainingOrBookAuthors_Author_LastNameContaining(query, pageable);
+    }
+
+    private Long getCurrentUserId() {
+        var userDetails = customUserDetailsService.getCurrentUser();
+        return userDetails != null ? userDetails.getId() : null;
     }
 
 
@@ -119,9 +132,9 @@ public class BookService {
         return bookRepository.findByFaculty(faculty);
     }
 
-    public List<Book> getBooksForUser(LibraryUser user) {
+    public List<BookDTO> getBooksForUser (LibraryUser  user) {
         logger.info("Fetching books for user: {}", user.getUsername());
-        logger.info("User faculties: {}", user.getFaculties());
+        logger.info("User  faculties: {}", user.getFaculties());
 
         Set<Faculty> userFaculties = user.getFaculties();
 
@@ -146,10 +159,14 @@ public class BookService {
         }
 
         // Удаляем дубликаты
+        books = books.stream().distinct().collect(Collectors.toList());
+
+        // Преобразуем книги в BookDTO и добавляем средние оценки
         return books.stream()
-                .distinct()
+                .map(book -> convertToDTO(book, user.getUserId())) // Используем ваш метод преобразования
                 .collect(Collectors.toList());
     }
+
 
 
     public boolean isBookAddedByUser (Long bookId, String username) {
@@ -164,10 +181,114 @@ public class BookService {
         bookRepository.save(book);
     }
 
-    public List<Book> getBooksByUserId(Long userId) {
+    public Page<Book> getBooksByUserId(Long userId, int page, int size) {
         logger.info("Fetching books added by user with ID: {}", userId);
-        return bookRepository.findByAddedById(userId); // Предполагается, что у вас есть соответствующий метод в репозитории
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByAddedById(userId, pageable);
     }
 
 
+
+    public double calculateAverageRating(Long bookId) {
+        List<BookRating> ratings = bookRatingRepository.findByBookBookId(bookId);
+        if (ratings.isEmpty()) return 0;
+        return ratings.stream().mapToInt(BookRating::getRating).average().orElse(0);
+    }
+
+    public Integer getUserRating(Long bookId, Long userId) {
+        if (userId == null) return null;
+        return bookRatingRepository.findByBookBookIdAndUserUserId(bookId, userId)
+                .map(BookRating::getRating)
+                .orElse(null);
+    }
+
+
+    public BookDTO convertToDTO(Book book, Long currentUserId) {
+        List<String> authorNames = book.getBookAuthors().stream()
+                .map(bookAuthor -> bookAuthor.getAuthor().getFirstName() + " " + bookAuthor.getAuthor().getLastName())
+                .collect(Collectors.toList());
+
+        Long addedById = null;
+        Optional<BookEntry> bookEntryOpt = findBookEntryByBook(book); // Вызов метода текущего класса
+        if (bookEntryOpt.isPresent() && bookEntryOpt.get().getAddedBy() != null) {
+            addedById = bookEntryOpt.get().getAddedBy().getId();
+        }
+
+        return new BookDTO(
+                book.getBookId(),
+                book.getTitle(),
+                book.getIsbn(),
+                book.getPublicationYear(),
+                book.getDescription(),
+                book.getPublisher(),
+                book.getStatus().name(),
+                authorNames,
+                calculateAverageRating(book.getBookId()),
+                getUserRating(book.getBookId(), currentUserId),
+                addedById
+        );
+    }
+
+
+
+    public BookEntry getBookEntryByBook(Book book) {
+        return bookEntryRepository
+                .findByBook(book);
+    }
+
+    public BookDTO editBook(Long id, Long currentUserId) {
+        Book book = getBookById(id);
+        if (book == null) {
+            throw new ResourceNotFoundException("Book not found");
+        }
+
+        LibraryUser  currentUser  = customUserDetailsService.getUserById(currentUserId);
+        if (currentUser  == null) {
+            throw new UnauthorizedAccessException("User not found");
+        }
+
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+        boolean isTeacher = currentUser.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_TEACHER"));
+
+        if (isAdmin) {
+            // Администратор может редактировать любую книгу
+            return convertToDTO(book, currentUserId); // передайте currentUser Id
+
+        }
+
+        if (isTeacher) {
+            // Проверяем, что текущий пользователь добавил эту книгу
+            BookEntry bookEntry = getBookEntryByBook(book);
+            if (bookEntry == null || !bookEntry.getAddedBy().getId().equals(currentUserId)) {
+                throw new ForbiddenAccessException("You do not have permission to edit this book");
+            }
+            return convertToDTO(book, currentUserId); // передайте currentUser Id
+
+        }
+
+        // Для других ролей доступ запрещён
+        throw new ForbiddenAccessException("Access denied");
+    }
+
+    public Page<Book> getBooksForEditing(Long userId, int page, int size) {
+        LibraryUser  currentUser  = customUserDetailsService.getUserById(userId);
+        Pageable pageable = PageRequest.of(page, size);
+
+        if (currentUser .hasRole("ADMIN")) {
+            return bookRepository.findAll(pageable); // Возвращаем все книги для администраторов
+        } else {
+            return bookRepository.findByAddedById(userId, pageable); // Возвращаем только книги, добавленные пользователем
+        }
+    }
+
+    public Optional<BookEntry> findBookEntryByBook(Book book) {
+        return Optional.ofNullable(bookEntryRepository.findByBook(book));
+    }
+
+    public Page<Book> getBooksByAuthor(Long authorId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return bookRepository.findByBookAuthors_Author_AuthorId(authorId, pageable);
+    }
 }

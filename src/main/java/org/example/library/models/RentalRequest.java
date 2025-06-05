@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,8 +23,15 @@ public class RentalRequest {
     private LibraryUser  user;
 
     @ManyToOne
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book;
+    @JoinColumn(name = "physical_copy_id", nullable = false)
+    private PhysicalCopy physicalCopy;
+
+    @Column(name = "rental_start_date")
+    private LocalDateTime rentalStartDate;
+
+    @Column(name = "rental_due_date")
+    private LocalDateTime rentalDueDate;
+
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

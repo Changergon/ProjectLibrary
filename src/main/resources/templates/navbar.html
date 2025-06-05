@@ -13,10 +13,13 @@
     </div>
     <div class="nav-links">
         <a href="/books" class="nav-link">Книги</a>
+
         <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/add-book" class="nav-link">Добавить книгу</a>
         <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/books-edit" class="nav-link">Редактировать книги</a>
+
         <a sec:authorize="hasRole('ADMIN')" href="/admin" class="nav-link">Управление пользователями</a>
     </div>
+
     <div class="user-section">
         <span id="username-display"></span>
         <form id="logoutForm" action="/api/users/logout" method="post" style="display: inline;">
@@ -41,7 +44,7 @@
     });
 
     // Обработчик выхода
-    document.getElementById('logout-btn').addEventListener('click', async (e) => {
+    document.querySelector('.logout-btn').addEventListener('click', async (e) => {
         e.preventDefault();
 
         try {

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Арендовать книги</title>
+</head>
+<body>
+<h1>Выберите книги для аренды</h1>
+
+<form id="rentForm">
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+        <tr>
+            <th>Выбрать</th>
+            <th>Название</th>
+            <th>Автор</th>
+            <th>Статус</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="copy : ${availableCopies}">
+            <td><input type="checkbox" name="copyIds" th:value="${copy.id}"/></td>
+            <td th:text="${copy.book.title}"></td>
+            <td th:text="${copy.book.author}"></td>
+            <td th:text="${copy.available} ? 'Доступна' : 'Занята'"></td>
+        </tr>
+        </tbody>
+    </table>
+    <button type="button" onclick="submitRentalRequest()">Арендовать выбранные книги</button>
+</form>
+
+<script>
+    async function submitRentalRequest() {
+        const checkboxes = document.querySelectorAll('input[name="copyIds"]:checked');
+        if (checkboxes.length === 0) {
+            alert('Пожалуйста, выберите хотя бы одну книгу для аренды.');
+            return;
+        }
+
+        const copyIds = Array.from(checkboxes).map(cb => cb.value);
+
+        try {
+            for (const copyId of copyIds) {
+                // Формируем тело запроса для создания заявки
+                const requestBody = {
+                    physicalCopy: { id: Number(copyId) },
+                    status: "PENDING"
+                };
+
+                const response = await fetch('/api/rental-requests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    alert('Ошибка при создании заявки: ' + errorText);
+                    return;
+                }
+            }
+
+            alert('Заявки успешно созданы!');
+            window.location.reload();
+
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+</script>
+
+</body>
+</html>
