@@ -1,5 +1,6 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -8,12 +9,13 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "library_users")
-public class LibraryUser  {
+public class LibraryUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,7 +37,8 @@ public class LibraryUser  {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    @ToString.Exclude // Исключаем взаимные ссылки
+    @ToString.Exclude
+    @JsonIgnore
     private Set<Role> roles = new HashSet<>();
 
     @ManyToMany
@@ -44,8 +47,14 @@ public class LibraryUser  {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "faculty_id")
     )
-    @ToString.Exclude // Исключаем взаимные ссылки
+    @ToString.Exclude
+    @JsonIgnore
     private Set<Faculty> faculties = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_read_book_id")
+    @JsonIgnore
+    private Book lastReadBook;
 
     @Override
     public int hashCode() {
@@ -56,19 +65,17 @@ public class LibraryUser  {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-
-        LibraryUser  user = (LibraryUser ) obj;
-
+        LibraryUser user = (LibraryUser) obj;
         return Objects.equals(userId, user.userId);
     }
 
     @Override
     public String toString() {
-        return "LibraryUser  {" +
+        return "LibraryUser{" +
                 "userId=" + userId +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", roles=" + roles.stream().map(Role::getRoleId).toList() + // Выводим только идентификаторы ролей
+                ", roles=" + (roles != null ? roles.stream().map(Role::getRoleName).collect(Collectors.toList()) : "[]") +
                 '}';
     }
 
@@ -83,19 +90,9 @@ public class LibraryUser  {
                 .anyMatch(role -> role.getRoleName().equals(roleName));
     }
 
-
-    @Getter
-    @Setter
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "last_read_book_id")
-    private Book lastReadBook;
-
-
-
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
                 .collect(Collectors.toSet());
     }
-
 }

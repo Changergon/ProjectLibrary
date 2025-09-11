@@ -2,27 +2,35 @@ package org.example.library.services;
 
 import org.example.library.models.Role;
 import org.example.library.repositories.RoleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class RoleService {
 
-    @Autowired
-    private RoleRepository roleRepository;
+    private static final Logger logger = LoggerFactory.getLogger(RoleService.class);
+    private final RoleRepository roleRepository;
 
+    @Autowired
+    public RoleService(RoleRepository roleRepository) {
+        this.roleRepository = roleRepository;
+    }
+
+    @Transactional
     public void initializeRoles() {
-        if (roleRepository.findByRoleName("STUDENT") == null) {
-            roleRepository.save(new Role("STUDENT"));
+        logger.info("Checking and initializing roles...");
+        List<String> rolesToCreate = List.of("STUDENT", "TEACHER", "LIBRARIAN", "ADMIN");
+        for (String roleName : rolesToCreate) {
+            if (roleRepository.findByRoleName(roleName) == null) {
+                roleRepository.save(new Role(roleName));
+                logger.info("Created role: {}", roleName);
+            }
         }
-        if (roleRepository.findByRoleName("TEACHER") == null) {
-            roleRepository.save(new Role("TEACHER"));
-        }
-        if (roleRepository.findByRoleName("LIBRARIAN") == null) {
-            roleRepository.save(new Role("LIBRARIAN"));
-        }
-        if (roleRepository.findByRoleName("ADMIN") == null) {
-            roleRepository.save(new Role("ADMIN"));
-        }
+        logger.info("Role initialization complete.");
     }
 }

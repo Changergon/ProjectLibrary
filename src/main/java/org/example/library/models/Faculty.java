@@ -1,14 +1,19 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.util.Objects;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "faculties")
 public class Faculty {
@@ -22,10 +27,12 @@ public class Faculty {
     private FacultyType type;
 
     @ManyToMany(mappedBy = "faculties")
+    @JsonIgnore
     private Set<Book> books;
 
     @ManyToMany(mappedBy = "faculties")
-    private Set<LibraryUser > users;
+    @JsonIgnore
+    private Set<LibraryUser> users;
 
     @Override
     public int hashCode() {

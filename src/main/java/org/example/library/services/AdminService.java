@@ -1,122 +1,110 @@
 package org.example.library.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.example.library.models.DTO.UserRoleUpdateDTO;
 import org.example.library.models.Faculty;
-import org.example.library.models.LibraryUser ;
+import org.example.library.models.LibraryUser;
 import org.example.library.models.Role;
 import org.example.library.repositories.FacultyRepository;
 import org.example.library.repositories.LibraryUserRepository;
 import org.example.library.repositories.RoleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 @Service
 public class AdminService {
 
-    @Autowired
-    private LibraryUserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(AdminService.class);
+
+    private final LibraryUserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final FacultyRepository facultyRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    private RoleRepository roleRepository;
+    public AdminService(LibraryUserRepository userRepository, RoleRepository roleRepository, FacultyRepository facultyRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.facultyRepository = facultyRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    @Autowired
-    private FacultyRepository facultyRepository; // Добавьте это
+    @Transactional(readOnly = true)
+    public List<LibraryUser> getAllUsers() {
+        logger.info("Fetching all users with roles and faculties.");
+        return userRepository.findAll();
+    }
 
-
-    public LibraryUser  createUser (LibraryUser  user) {
-        // Роль будет установлена в UserService
+    @Transactional
+    public LibraryUser createUser(LibraryUser user) {
+        logger.info("Creating a new user with username: {}", user.getUsername());
+        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
         return userRepository.save(user);
     }
 
-    public void assignRoleToUser (Long userId, Long roleId) {
-        LibraryUser  user = userRepository.findById(userId).orElse(null);
-        Role role = roleRepository.findById(roleId).orElse(null);
+    @Transactional
+    public void updateUserRoles(List<UserRoleUpdateDTO> updates) {
+        logger.info("Starting batch update for user roles and faculties.");
+        for (UserRoleUpdateDTO update : updates) {
+            LibraryUser user = userRepository.findById(update.getUserId())
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + update.getUserId()));
 
-        if (user == null) {
-            System.out.println("Пользователь с ID " + userId + " не найден.");
-            return; // Или выбросьте исключение
+            if (update.getRoleIds() != null) {
+                List<Role> roles = roleRepository.findAllById(update.getRoleIds());
+                user.setRoles(new HashSet<>(roles));
+            }
+
+            if (update.getFacultyIds() != null) {
+                List<Faculty> faculties = facultyRepository.findAllById(update.getFacultyIds());
+                user.setFaculties(new HashSet<>(faculties));
+            }
+
+            userRepository.save(user);
+            logger.info("Updated roles and faculties for user: {}", user.getUsername());
         }
+        logger.info("Batch update complete.");
+    }
 
-        if (role == null) {
-            System.out.println("Роль с ID " + roleId + " не найдена.");
-            return; // Или выбросьте исключение
-        }
+    @Transactional
+    public void assignRoleToUser(Long userId, Long roleId) {
+        LibraryUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new EntityNotFoundException("Role not found with ID: " + roleId));
 
-        // Добавление роли в список ролей пользователя
         user.getRoles().add(role);
         userRepository.save(user);
-        System.out.println("Роль " + role.getRoleName() + " была назначена пользователю " + user.getUsername());
+        logger.info("Assigned role '{}' to user '{}'", role.getRoleName(), user.getUsername());
     }
 
-    public List<LibraryUser > getAllUsers() {
-        List<LibraryUser > users = userRepository.findAll();
-        System.out.println("Количество пользователей: " + users.size()); // Вывод количества пользователей
-        return users;
-    }
+    @Transactional
+    public void assignFacultyToUser(Long userId, Long facultyId) {
+        LibraryUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        Faculty faculty = facultyRepository.findById(facultyId)
+                .orElseThrow(() -> new EntityNotFoundException("Faculty not found with ID: " + facultyId));
 
-
-    public void updateUserRoles(List<UserRoleUpdateDTO> updates) {
-        for (UserRoleUpdateDTO update : updates) {
-            LibraryUser  user = userRepository.findById(update.getUserId())
-                    .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-
-            // Получение ролей по именам
-            List<Role> roles = roleRepository.findAllByRoleNameIn(update.getRoles());
-            user.setRoles(new HashSet<>(roles)); // Используйте Set для уникальности
-
-            // Обновление факультетов
-            List<Faculty> faculties = facultyRepository.findAllById(update.getFacultyIds());
-            user.setFaculties(new HashSet<>(faculties)); // Убедитесь, что вы используете Set для уникальности
-
-            userRepository.save(user); // Сохранение обновленного пользователя
-        }
-    }
-
-
-
-    public void assignFacultyToUser (Long userId, Long facultyId) {
-        LibraryUser  user = userRepository.findById(userId).orElse(null);
-        Faculty faculty = facultyRepository.findById(facultyId).orElse(null);
-
-        if (user == null) {
-            System.out.println("Пользователь с ID " + userId + " не найден.");
-            return; // Или выбросьте исключение
-        }
-
-        if (faculty == null) {
-            System.out.println("Факультет с ID " + facultyId + " не найден.");
-            return; // Или выбросьте исключение
-        }
-
-        // Добавление факультета в список факультетов пользователя
         user.getFaculties().add(faculty);
         userRepository.save(user);
-        System.out.println("Факультет " + faculty.getType() + " был назначен пользователю " + user.getUsername());
+        logger.info("Assigned faculty '{}' to user '{}'", faculty.getType(), user.getUsername());
     }
 
-    public void removeFacultyFromUser (Long userId, Long facultyId) {
-        LibraryUser  user = userRepository.findById(userId).orElse(null);
-        Faculty faculty = facultyRepository.findById(facultyId).orElse(null);
+    @Transactional
+    public void removeFacultyFromUser(Long userId, Long facultyId) {
+        LibraryUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        Faculty faculty = facultyRepository.findById(facultyId)
+                .orElseThrow(() -> new EntityNotFoundException("Faculty not found with ID: " + facultyId));
 
-        if (user == null) {
-            System.out.println("Пользователь с ID " + userId + " не найден.");
-            return; // Или выбросьте исключение
-        }
-
-        if (faculty == null) {
-            System.out.println("Факультет с ID " + facultyId + " не найден.");
-            return; // Или выбросьте исключение
-        }
-
-        // Удаление факультета из списка факультетов пользователя
         user.getFaculties().remove(faculty);
         userRepository.save(user);
-        System.out.println("Факультет " + faculty.getType() + " был удален у пользователя " + user.getUsername());
+        logger.info("Removed faculty '{}' from user '{}'", faculty.getType(), user.getUsername());
     }
-
-
 }

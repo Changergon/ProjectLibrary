@@ -2,11 +2,8 @@ package org.example.library.controllers;
 
 import org.example.library.models.PhysicalCopy;
 import org.example.library.models.RentalRequest;
-import org.example.library.models.RentalRequestStatus;
 import org.example.library.services.RentalRequestService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,8 +12,11 @@ import java.util.List;
 @RequestMapping("/api/rental-requests")
 public class RentalRequestController {
 
-    @Autowired
-    private RentalRequestService rentalRequestService;
+    private final RentalRequestService rentalRequestService;
+
+    public RentalRequestController(RentalRequestService rentalRequestService) {
+        this.rentalRequestService = rentalRequestService;
+    }
 
     @PostMapping
     public ResponseEntity<RentalRequest> createRentalRequest(@RequestBody RentalRequest request) {
@@ -24,9 +24,10 @@ public class RentalRequestController {
         return ResponseEntity.ok(createdRequest);
     }
 
+    // Returns all PENDING requests by default
     @GetMapping
-    public ResponseEntity<List<RentalRequest>> getRentalRequests() {
-        List<RentalRequest> requests = rentalRequestService.getRentalRequests();
+    public ResponseEntity<List<RentalRequest>> getPendingRentalRequests() {
+        List<RentalRequest> requests = rentalRequestService.getPendingRentalRequests();
         return ResponseEntity.ok(requests);
     }
 
@@ -36,22 +37,26 @@ public class RentalRequestController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/rented-books")
-    public ResponseEntity<List<RentalRequest>> getRentedBooks() {
-        List<RentalRequest> rentedBooks = rentalRequestService.getRentedBooks();
+    @PostMapping("/reject/{id}")
+    public ResponseEntity<Void> rejectRentalRequest(@PathVariable Long id) {
+        rentalRequestService.rejectRentalRequest(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // Returns all ACTIVE rental requests (books currently rented out)
+    @GetMapping("/active")
+    public ResponseEntity<List<RentalRequest>> getActiveRentalRequests() {
+        List<RentalRequest> rentedBooks = rentalRequestService.getActiveRentalRequests();
         return ResponseEntity.ok(rentedBooks);
     }
 
-    // Получить все заявки с их статусами и расположением физической копии
-    @GetMapping("/pending")
-    public ResponseEntity<List<RentalRequest>> getPendingRequests() {
-        List<RentalRequest> pendingRequests = rentalRequestService.getRentalRequests().stream()
-                .filter(r -> r.getStatus() == RentalRequestStatus.PENDING)
-                .toList();
-        return ResponseEntity.ok(pendingRequests);
+    // Returns all COMPLETED rental requests
+    @GetMapping("/completed")
+    public ResponseEntity<List<RentalRequest>> getCompletedRentalRequests() {
+        List<RentalRequest> completedRequests = rentalRequestService.getCompletedRentalRequests();
+        return ResponseEntity.ok(completedRequests);
     }
 
-    // Получить просроченные книги
     @GetMapping("/overdue")
     public ResponseEntity<List<RentalRequest>> getOverdueRentals() {
         List<RentalRequest> overdue = rentalRequestService.getOverdueRentals();
@@ -69,5 +74,4 @@ public class RentalRequestController {
         List<PhysicalCopy> availableCopies = rentalRequestService.getAvailableCopies();
         return ResponseEntity.ok(availableCopies);
     }
-
 }

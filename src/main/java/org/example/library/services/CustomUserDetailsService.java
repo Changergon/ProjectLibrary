@@ -1,9 +1,11 @@
 package org.example.library.services;
 
 import jakarta.persistence.EntityNotFoundException;
-import org.example.library.models.LibraryUser ;
+import org.example.library.models.LibraryUser;
 import org.example.library.models.MyUserDetails;
 import org.example.library.repositories.LibraryUserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,14 +13,21 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
+    private final LibraryUserRepository userRepository;
+
     @Autowired
-    private LibraryUserRepository userRepository;
+    public CustomUserDetailsService(LibraryUserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         LibraryUser libraryUser = userRepository.findByUsername(username);
         if (libraryUser == null) {
@@ -27,24 +36,27 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new MyUserDetails(libraryUser);
     }
 
+    @Transactional(readOnly = true)
     public MyUserDetails getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
-            System.out.println("Ошибка: аутентификация не найдена.");
+            logger.warn("Authentication object not found in SecurityContext.");
             return null;
         }
-        System.out.println("Аутентификация найдена. Текущий пользователь: " + authentication.getName());
-        if (authentication.getPrincipal() instanceof MyUserDetails) {
-            return (MyUserDetails) authentication.getPrincipal();
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof MyUserDetails) {
+            return (MyUserDetails) principal;
         }
-        System.out.println("Не удалось получить MyUserDetails.");
+
+        logger.debug("Principal is not an instance of MyUserDetails. Principal type: {}", principal.getClass().getName());
         return null;
     }
 
-
-    public LibraryUser  getUserById(Long userId) {
+    @Transactional(readOnly = true)
+    public LibraryUser getUserById(Long userId) {
+        // This now uses the optimized findById from the repository
         return userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
     }
-
 }

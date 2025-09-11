@@ -3,14 +3,16 @@ package org.example.library.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.util.List;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -46,9 +48,11 @@ public class Book {
     private List<BookAuthor> bookAuthors;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<PhysicalCopy> physicalCopies;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Ebook> ebooks;
 
     @ManyToMany
@@ -57,6 +61,7 @@ public class Book {
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "faculty_id")
     )
+    @JsonIgnore
     private Set<Faculty> faculties; // Связь с факультетами
 
     @OneToOne(mappedBy = "book", cascade = CascadeType.ALL)
@@ -88,6 +93,4 @@ public class Book {
                 ", authorsCount=" + (bookAuthors != null ? bookAuthors.size() : 0) + // Указываем только количество авторов
                 '}';
     }
-
-
 }

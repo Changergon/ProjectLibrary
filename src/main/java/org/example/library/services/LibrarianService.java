@@ -1,48 +1,62 @@
 package org.example.library.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.example.library.models.Book;
 import org.example.library.models.RentalRequest;
 import org.example.library.models.RentalRequestStatus;
-import org.example.library.models.BookStatus; // Убедитесь, что этот импорт присутствует
+import org.example.library.models.BookStatus;
 import org.example.library.repositories.BookRepository;
-import org.example.library.repositories.LibraryUserRepository;
 import org.example.library.repositories.RentalRequestRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 public class LibrarianService {
 
-    @Autowired
-    private LibraryUserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(LibrarianService.class);
+
+    private final BookRepository bookRepository;
+    private final RentalRequestRepository rentalRequestRepository;
 
     @Autowired
-    private BookRepository bookRepository;
+    public LibrarianService(BookRepository bookRepository, RentalRequestRepository rentalRequestRepository) {
+        this.bookRepository = bookRepository;
+        this.rentalRequestRepository = rentalRequestRepository;
+    }
 
-    @Autowired
-    private RentalRequestRepository rentalRequestRepository;
-
-    // Метод для получения запросов на аренду
+    @Transactional(readOnly = true)
     public List<RentalRequest> getRentalRequests() {
+        logger.info("Fetching all rental requests.");
+        // This now uses the optimized findAll() from the repository
         return rentalRequestRepository.findAll();
     }
 
+    @Transactional
     public void confirmRentalReady(Long requestId) {
+        logger.info("Confirming rental request with ID: {}", requestId);
         RentalRequest request = rentalRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Запрос не найден с ID: " + requestId));
-        request.setStatus(RentalRequestStatus.APPROVED); // Используем перечисление
+                .orElseThrow(() -> new EntityNotFoundException("Rental request not found with ID: " + requestId));
+        request.setStatus(RentalRequestStatus.APPROVED);
         rentalRequestRepository.save(request);
+        logger.info("Rental request with ID: {} status updated to APPROVED", requestId);
     }
 
-    // Метод для получения списка выданных книг
+    @Transactional(readOnly = true)
     public List<Book> getRentedBooks() {
-        return bookRepository.findRentedBooks(BookStatus.NOT_AVAILABLE); // Передаем статус "Выдано"
+        logger.info("Fetching all rented books (status: NOT_AVAILABLE).");
+        // This uses the optimized findRentedBooks() from BookRepository
+        return bookRepository.findRentedBooks(BookStatus.NOT_AVAILABLE);
     }
 
-    // Метод для получения сроков аренды
+    @Transactional(readOnly = true)
     public List<RentalRequest> getRentalPeriods() {
-        return rentalRequestRepository.findAll(); // Или другая логика для получения сроков
+        logger.info("Fetching all rental periods (all rental requests).");
+        // This now uses the optimized findAll() from the repository
+        return rentalRequestRepository.findAll();
     }
 }

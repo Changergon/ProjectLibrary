@@ -2,13 +2,15 @@ package org.example.library.models;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -21,11 +23,10 @@ public class BookEntry {
     private Long entryId;
 
     @ManyToOne
-    @JoinColumn(name = "user_id") // Предполагается, что у вас есть сущность LibraryUser
-    @JsonBackReference // Указываем, что это обратная часть
-    private LibraryUser  addedBy; // Пользователь, который добавил книгу
+    @JoinColumn(name = "user_id")
+    private LibraryUser addedBy; // Пользователь, который добавил книгу
 
-    @OneToOne // Каждая книга может иметь только одну запись о добавлении
+    @OneToOne
     @JoinColumn(name = "book_id", unique = true)
     private Book book; // Книга, которая была добавлена
 

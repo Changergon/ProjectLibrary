@@ -9,6 +9,6 @@ import java.util.List;
 @Getter
 public class UserRoleUpdateDTO {
     private Long userId;
-    private List<String> roles; // Список ролей
-    private List<Long> facultyIds; // Измените на список идентификаторов факультетов
+    private List<Long> roleIds; // Список идентификаторов ролей
+    private List<Long> facultyIds; // Список идентификаторов факультетов
 }

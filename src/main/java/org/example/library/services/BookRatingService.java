@@ -1,40 +1,47 @@
 package org.example.library.services;
 
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
 import org.example.library.models.Book;
 import org.example.library.models.BookRating;
 import org.example.library.models.LibraryUser;
 import org.example.library.repositories.BookRatingRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
 public class BookRatingService {
 
-    @Autowired
-    private BookRatingRepository bookRatingRepository;
+    private static final Logger logger = LoggerFactory.getLogger(BookRatingService.class);
+
+    private final BookRatingRepository bookRatingRepository;
+    private final BookService bookService;
+    private final UserService userService;
 
     @Autowired
-    private BookService bookService;
-
-    @Autowired
-    private UserService userService;
+    public BookRatingService(BookRatingRepository bookRatingRepository, BookService bookService, UserService userService) {
+        this.bookRatingRepository = bookRatingRepository;
+        this.bookService = bookService;
+        this.userService = userService;
+    }
 
     @Transactional
     public void addOrUpdateRating(Long bookId, int rating, String username) {
+        logger.info("Attempting to add/update rating for book ID: {} by user: {}", bookId, username);
+
         LibraryUser user = userService.findByUsername(username);
         if (user == null) {
-            throw new RuntimeException("Пользователь не найден");
+            throw new EntityNotFoundException("User not found with username: " + username);
         }
 
+        // getBookById already throws EntityNotFoundException if book is not found
         Book book = bookService.getBookById(bookId);
-        if (book == null) {
-            throw new RuntimeException("Книга не найдена");
-        }
 
-        Optional<BookRating> existingRatingOpt = bookRatingRepository.findByBookBookIdAndUserUserId(bookId, user.getUserId());
+        Optional<BookRating> existingRatingOpt = bookRatingRepository.findByBookBookIdAndUserUserId(bookId, user.getId());
 
         BookRating bookRating = existingRatingOpt.orElse(new BookRating());
         bookRating.setBook(book);
@@ -43,7 +50,6 @@ public class BookRatingService {
 
         bookRatingRepository.save(bookRating);
 
-        System.out.println("Сохранена оценка: " + rating + " для книги " + bookId + " пользователем " + username);
+        logger.info("Saved rating: {} for book ID: {} by user: {}", rating, bookId, username);
     }
-
 }

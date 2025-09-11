@@ -1,14 +1,17 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -20,16 +23,29 @@ public class Role {
     @Column(name = "role_id")
     private Long roleId;
 
-    @Column(name = "role_name", unique = true) // Убедитесь, что имя роли уникально
+    @Column(name = "role_name", unique = true)
     private String roleName;
 
     @ManyToMany(mappedBy = "roles")
-    @ToString.Exclude // Исключаем взаимные ссылки
-    private List<LibraryUser > libraryUsers; // Список пользователей с этой ролью
+    @ToString.Exclude
+    @JsonIgnore
+    private List<LibraryUser> libraryUsers;
 
-    // Конструктор для создания роли с именем
     public Role(String roleName) {
         this.roleName = roleName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Role role = (Role) o;
+        return roleId != null && roleId.equals(role.roleId);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 
     @Override

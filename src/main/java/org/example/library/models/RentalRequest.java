@@ -1,13 +1,16 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -20,10 +23,12 @@ public class RentalRequest {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private LibraryUser  user;
+    @JsonIgnore
+    private LibraryUser user;
 
     @ManyToOne
     @JoinColumn(name = "physical_copy_id", nullable = false)
+    @JsonIgnore
     private PhysicalCopy physicalCopy;
 
     @Column(name = "rental_start_date")
@@ -32,8 +37,20 @@ public class RentalRequest {
     @Column(name = "rental_due_date")
     private LocalDateTime rentalDueDate;
 
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private RentalRequestStatus status; // Изменено с String на RentalRequestStatus
+    private RentalRequestStatus status;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RentalRequest that = (RentalRequest) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

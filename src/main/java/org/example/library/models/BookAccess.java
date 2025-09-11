@@ -1,11 +1,16 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-@Data
+import java.util.Objects;
+
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -19,13 +24,27 @@ public class BookAccess {
     private boolean access; // true, если доступ разрешен, false - запрещен
 
     @ManyToOne
-    @MapsId("userId") // Указываем, что userId в BookAccessId соответствует userId в LibraryUser
+    @MapsId("userId")
     @JoinColumn(name = "user_id")
-    private LibraryUser  libraryUser;
+    @JsonIgnore
+    private LibraryUser libraryUser;
 
     @ManyToOne
-    @MapsId("bookId") // Указываем, что bookId в BookAccessId соответствует bookId в Book
+    @MapsId("bookId")
     @JoinColumn(name = "book_id")
+    @JsonIgnore
     private Book book;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BookAccess that = (BookAccess) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
