@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.ToString;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -29,7 +31,7 @@ public class Role {
     @ManyToMany(mappedBy = "roles")
     @ToString.Exclude
     @JsonIgnore
-    private List<LibraryUser> libraryUsers;
+    private Set<LibraryUser> libraryUsers;
 
     public Role(String roleName) {
         this.roleName = roleName;
@@ -45,7 +47,7 @@ public class Role {
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(roleId);
     }
 
     @Override

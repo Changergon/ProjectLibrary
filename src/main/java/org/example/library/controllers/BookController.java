@@ -8,7 +8,8 @@ import org.example.library.models.DTO.BookDTO;
 import org.example.library.models.*;
 import org.example.library.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -241,7 +242,7 @@ public class BookController {
             File destinationFile = new File(dir, fileName);
 
             file.transferTo(destinationFile);
-            return destinationFile.getAbsolutePath();
+            return fileName;
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при сохранении файла: " + e.getMessage(), e);
         }
@@ -250,7 +251,7 @@ public class BookController {
 
     // Получение содержимого книги
     @GetMapping("/{id}/content")
-    public ResponseEntity<FileSystemResource> getBookContent(@PathVariable Long id) throws IOException {
+    public ResponseEntity<Resource> getBookContent(@PathVariable Long id) throws IOException {
         // Получите книгу из базы данных
         Book book = bookService.getBookById(id);
         if (book == null || book.getEbooks().isEmpty()) {
@@ -258,15 +259,16 @@ public class BookController {
         }
 
         Ebook ebook = book.getEbooks().getFirst(); // Получаем первый eBook
-        System.out.println("Путь к файлу: " + ebook.getFileLocation()); // Добавлено для отладки
-        File pdfFile = new File(ebook.getFileLocation());
+        String fileName = ebook.getFileLocation();
 
-        if (!pdfFile.exists()) {
+        Resource resource = new ClassPathResource("Storage/" + fileName);
+
+        if (!resource.exists()) {
             return ResponseEntity.notFound().build();
         }
 
         // Кодируем имя файла
-        String encodedFileName = URLEncoder.encode(pdfFile.getName(), StandardCharsets.UTF_8);
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + encodedFileName + "\"");
@@ -274,7 +276,7 @@ public class BookController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(new FileSystemResource(pdfFile));
+                .body(resource);
     }
 
     // Метод для скачивания электронной книги

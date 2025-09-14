@@ -31,7 +31,7 @@ public class LibraryUser {
     @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -41,7 +41,7 @@ public class LibraryUser {
     @JsonIgnore
     private Set<Role> roles = new HashSet<>();
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "user_faculty",
             joinColumns = @JoinColumn(name = "user_id"),

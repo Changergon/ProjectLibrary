@@ -56,17 +56,18 @@ public class AdminService {
             LibraryUser user = userRepository.findById(update.getUserId())
                     .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + update.getUserId()));
 
-            if (update.getRoleIds() != null) {
-                List<Role> roles = roleRepository.findAllById(update.getRoleIds());
-                user.setRoles(new HashSet<>(roles));
+            if (update.getRoles() != null) {
+                List<Role> roles = roleRepository.findAllByRoleNameIn(update.getRoles());
+                user.getRoles().clear();
+                user.getRoles().addAll(roles);
             }
 
             if (update.getFacultyIds() != null) {
                 List<Faculty> faculties = facultyRepository.findAllById(update.getFacultyIds());
-                user.setFaculties(new HashSet<>(faculties));
+                user.getFaculties().clear();
+                user.getFaculties().addAll(faculties);
             }
 
-            userRepository.save(user);
             logger.info("Updated roles and faculties for user: {}", user.getUsername());
         }
         logger.info("Batch update complete.");
@@ -80,7 +81,6 @@ public class AdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Role not found with ID: " + roleId));
 
         user.getRoles().add(role);
-        userRepository.save(user);
         logger.info("Assigned role '{}' to user '{}'", role.getRoleName(), user.getUsername());
     }
 
@@ -92,7 +92,6 @@ public class AdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Faculty not found with ID: " + facultyId));
 
         user.getFaculties().add(faculty);
-        userRepository.save(user);
         logger.info("Assigned faculty '{}' to user '{}'", faculty.getType(), user.getUsername());
     }
 
@@ -104,7 +103,6 @@ public class AdminService {
                 .orElseThrow(() -> new EntityNotFoundException("Faculty not found with ID: " + facultyId));
 
         user.getFaculties().remove(faculty);
-        userRepository.save(user);
         logger.info("Removed faculty '{}' from user '{}'", faculty.getType(), user.getUsername());
     }
 }
