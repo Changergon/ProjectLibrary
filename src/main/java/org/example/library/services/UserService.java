@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserService {
@@ -115,5 +116,36 @@ public class UserService {
         user.setLastReadBook(book);
         userRepository.save(user);
         logger.info("Last read book for user {} updated to book with ID: {}", userId, bookId);
+    }
+
+    @Transactional
+    public void addBookToShelf(Long userId, Long bookId) {
+        LibraryUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with ID: " + bookId));
+
+        user.getBookshelf().add(book);
+        logger.info("Book '{}' added to bookshelf for user '{}'", book.getTitle(), user.getUsername());
+    }
+
+    @Transactional
+    public void removeBookFromShelf(Long userId, Long bookId) {
+        LibraryUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with ID: " + bookId));
+
+        user.getBookshelf().remove(book);
+        logger.info("Book '{}' removed from bookshelf for user '{}'", book.getTitle(), user.getUsername());
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Book> getBookshelf(Long userId) {
+        LibraryUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        // Eagerly fetch the bookshelf to avoid LazyInitializationException
+        user.getBookshelf().size(); // This forces initialization
+        return user.getBookshelf();
     }
 }

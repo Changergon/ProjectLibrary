@@ -1,15 +1,19 @@
 package org.example.library.controllers;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.example.library.models.Book;
+import org.example.library.models.DTO.BookDTO;
 import org.example.library.models.DTO.UserDTO;
 import org.example.library.models.DTO.UserLoginDTO;
 import org.example.library.models.DTO.UserRegistrationDTO;
 import org.example.library.models.LibraryUser ;
 import org.example.library.models.Role;
+import org.example.library.services.BookService;
 import org.example.library.services.FacultyService;
 import org.example.library.services.UserService;
 import org.example.library.exceptions.UserAlreadyExistsException;
@@ -30,6 +34,7 @@ import org.example.library.repositories.RoleRepository;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -40,6 +45,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private BookService bookService;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -215,6 +223,39 @@ public class UserController {
         } else {
             logger.info("Нет активной аутентификации для выхода");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Не удалось выйти");
+        }
+    }
+
+    @PostMapping("/{userId}/bookshelf/{bookId}")
+    public ResponseEntity<Void> addBookToShelf(@PathVariable Long userId, @PathVariable Long bookId) {
+        try {
+            userService.addBookToShelf(userId, bookId);
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{userId}/bookshelf/{bookId}")
+    public ResponseEntity<Void> removeBookFromShelf(@PathVariable Long userId, @PathVariable Long bookId) {
+        try {
+            userService.removeBookFromShelf(userId, bookId);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{userId}/bookshelf")
+    public ResponseEntity<List<BookDTO>> getBookshelf(@PathVariable Long userId) {
+        try {
+            Set<Book> bookshelf = userService.getBookshelf(userId);
+            List<BookDTO> bookDTOs = bookshelf.stream()
+                    .map(book -> bookService.convertToDTO(book, userId))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(bookDTOs);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 }

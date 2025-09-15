@@ -51,6 +51,16 @@ public class LibraryUser {
     @JsonIgnore
     private Set<Faculty> faculties = new HashSet<>();
 
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "user_bookshelf",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "book_id")
+    )
+    @ToString.Exclude
+    @JsonIgnore
+    private Set<Book> bookshelf = new HashSet<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_read_book_id")
     @JsonIgnore

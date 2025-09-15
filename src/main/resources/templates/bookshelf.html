@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моя книжная полка</title>
+    <link rel="stylesheet" href="/books.css"> <!-- Используем те же стили, что и для главной страницы -->
+    <link rel="stylesheet" href="/navbar.css">
+</head>
+<body>
+<div th:replace="~{navbar :: navbar}"></div>
+
+<header>
+    <h1>Моя книжная полка</h1>
+</header>
+
+<main class="content-wrapper">
+    <div id="loading" style="display:none;">Загрузка...</div>
+    <div class="books-container" id="bookshelfList"></div>
+</main>
+
+<script>
+    let currentUserId = null;
+
+    async function fetchCurrentUser() {
+        try {
+            const response = await fetch('/api/users/current');
+            if (response.ok) {
+                const user = await response.json();
+                currentUserId = user.userId;
+                return user;
+            } else {
+                window.location.href = '/login';
+            }
+        } catch (error) {
+            console.error("Ошибка при получении пользователя:", error);
+            window.location.href = '/login';
+        }
+    }
+
+    async function loadBookshelf() {
+        if (!currentUserId) return;
+
+        const bookshelfList = document.getElementById('bookshelfList');
+        bookshelfList.innerHTML = '';
+        document.getElementById('loading').style.display = 'block';
+
+        try {
+            const response = await fetch(`/api/users/${currentUserId}/bookshelf`);
+            if (!response.ok) throw new Error('Не удалось загрузить книжную полку.');
+
+            const books = await response.json();
+
+            if (books.length > 0) {
+                books.forEach(book => {
+                    const card = document.createElement('div');
+                    card.className = 'book-card';
+                    card.id = `book-card-${book.bookId}`;
+
+                    card.innerHTML = `
+                        <div class="book-card-content">
+                            <div class="book-title">${book.title}</div>
+                            <div class="book-authors">${book.authorNames.join(', ')}</div>
+                            <div class="book-meta"><strong>Год издания:</strong> ${book.publicationYear}</div>
+                        </div>
+                    `;
+
+                    const readButton = document.createElement('button');
+                    readButton.textContent = 'Читать';
+                    readButton.className = 'read-button';
+                    readButton.onclick = () => { window.location.href = `/books/read?id=${book.bookId}`; };
+
+                    const removeButton = document.createElement('button');
+                    removeButton.textContent = 'Удалить с полки';
+                    removeButton.className = 'delete-btn'; // Используем стиль кнопки удаления
+                    removeButton.style.marginTop = '10px';
+                    removeButton.onclick = () => removeBookFromShelf(book.bookId);
+
+                    card.appendChild(readButton);
+                    card.appendChild(removeButton);
+                    bookshelfList.appendChild(card);
+                });
+            } else {
+                bookshelfList.innerHTML = '<p>Ваша книжная полка пуста.</p>';
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            bookshelfList.innerHTML = '<p>Ошибка при загрузке книг.</p>';
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    async function removeBookFromShelf(bookId) {
+        if (!confirm('Вы уверены, что хотите убрать эту книгу с полки?')) return;
+
+        try {
+            const response = await fetch(`/api/users/${currentUserId}/bookshelf/${bookId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                // Удаляем карточку книги со страницы
+                const cardToRemove = document.getElementById(`book-card-${bookId}`);
+                if (cardToRemove) {
+                    cardToRemove.remove();
+                }
+                alert('Книга убрана с полки.');
+            } else {
+                throw new Error('Не удалось убрать книгу с полки.');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert(error.message);
+        }
+    }
+
+    window.onload = async () => {
+        await fetchCurrentUser();
+        await loadBookshelf();
+    };
+</script>
+
+</body>
+</html>

@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -137,8 +138,16 @@ public class BookController {
         return ResponseEntity.ok(bookService.convertToDTO(book, currentUserId));
     }
 
-
-
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @bookService.isBookAddedByUser(#id, principal.username))")
+    public ResponseEntity<Void> deleteBook(@PathVariable Long id, Principal principal) {
+        try {
+            bookService.deleteBook(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 
 
     // Загрузка новой книги

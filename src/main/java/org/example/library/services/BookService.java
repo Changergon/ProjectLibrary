@@ -117,6 +117,15 @@ public class BookService {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + bookId));
 
+        // Remove the book from all users' bookshelves to avoid foreign key violations.
+        Set<LibraryUser> users = book.getUsersOnBookshelf();
+        if (users != null && !users.isEmpty()) {
+            logger.info("Book is on the shelf of {} users. Removing references.", users.size());
+            for (LibraryUser user : users) {
+                user.getBookshelf().remove(book);
+            }
+        }
+
         // Delete associated file
         if (book.getEbooks() != null && !book.getEbooks().isEmpty()) {
             Ebook ebook = book.getEbooks().getFirst();

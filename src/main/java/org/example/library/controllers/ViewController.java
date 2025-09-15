@@ -39,6 +39,12 @@ public class ViewController {
         return "books";
     }
 
+    @GetMapping("/bookshelf")
+    public String bookshelf(Model model) {
+        addCurrentUserToModel(model);
+        return "bookshelf";
+    }
+
     @GetMapping("/books/read")
     public String readBooks(Model model) {
         return "reader"; // Возврат имени шаблона для отображения списка книг

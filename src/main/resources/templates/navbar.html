@@ -13,6 +13,7 @@
     </div>
     <div class="nav-links">
         <a href="/books" class="nav-link">Книги</a>
+        <a href="/bookshelf" class="nav-link" sec:authorize="isAuthenticated()">Моя полка</a>
 
         <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/add-book" class="nav-link">Добавить книгу</a>
         <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/books-edit" class="nav-link">Редактировать книги</a>
