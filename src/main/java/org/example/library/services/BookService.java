@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -230,14 +231,22 @@ public class BookService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Book> getBooksForEditing(Long userId, int page, int size) {
-        LibraryUser currentUser = customUserDetailsService.getUserById(userId);
-        Pageable pageable = PageRequest.of(page, size);
+    public Page<Book> getBooksForEditing(LibraryUser currentUser, String query, Pageable pageable) {
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(role -> role.getRoleName().equals("ADMIN"));
 
-        if (currentUser.hasRole("ADMIN")) {
-            return bookRepository.findAll(pageable);
-        } else {
-            return bookRepository.findByAddedById(userId, pageable);
+        if (isAdmin) {
+            if (StringUtils.hasText(query)) {
+                return bookRepository.findByTitleContainingOrBookAuthors_Author_FirstNameContainingOrBookAuthors_Author_LastNameContaining(query, pageable);
+            } else {
+                return bookRepository.findAll(pageable);
+            }
+        } else { // For TEACHER
+            if (StringUtils.hasText(query)) {
+                return bookRepository.findByAddedByAndSearch(currentUser.getUserId(), query, pageable);
+            } else {
+                return bookRepository.findByAddedById(currentUser.getUserId(), pageable);
+            }
         }
     }
 

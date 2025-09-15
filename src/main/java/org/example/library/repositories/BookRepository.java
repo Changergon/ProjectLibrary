@@ -48,6 +48,10 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @EntityGraph(attributePaths = {"bookAuthors", "bookAuthors.author", "faculties"})
     Page<Book> findByAddedById(@Param("userId") Long userId, Pageable pageable);
 
+    @Query("SELECT b FROM Book b JOIN b.bookAuthors ba JOIN ba.author a WHERE b.entry.addedBy.userId = :userId AND (b.title LIKE %:query% OR a.firstName LIKE %:query% OR a.lastName LIKE %:query%)")
+    @EntityGraph(attributePaths = {"bookAuthors", "bookAuthors.author", "faculties"})
+    Page<Book> findByAddedByAndSearch(@Param("userId") Long userId, @Param("query") String query, Pageable pageable);
+
     @Query("SELECT DISTINCT b FROM Book b JOIN b.bookAuthors ba WHERE ba.author.authorId = :authorId")
     @EntityGraph(attributePaths = {"bookAuthors", "bookAuthors.author", "faculties"})
     Page<Book> findByBookAuthors_Author_AuthorId(@Param("authorId") Long authorId, Pageable pageable);

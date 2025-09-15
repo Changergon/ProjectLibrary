@@ -13,6 +13,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -110,9 +111,15 @@ public class BookController {
 
     @GetMapping("/editable")
     public ResponseEntity<Page<BookDTO>> getEditableBooks(@RequestParam Long userId,
-                                                          @RequestParam int page,
-                                                          @RequestParam int size) {
-        Page<Book> books = bookService.getBooksForEditing(userId, page, size);
+                                                          @RequestParam(required = false) String query,
+                                                          @RequestParam(defaultValue = "0") int page,
+                                                          @RequestParam(defaultValue = "10") int size) {
+        LibraryUser currentUser = customUserDetailsService.getUserById(userId);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Book> books = bookService.getBooksForEditing(currentUser, query, pageable);
         return ResponseEntity.ok(books.map(book -> bookService.convertToDTO(book, userId)));
     }
 
@@ -130,18 +137,7 @@ public class BookController {
         return ResponseEntity.ok(bookService.convertToDTO(book, currentUserId));
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
-    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
-        try {
-            bookService.deleteBook(id);
-            return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+
 
 
 
