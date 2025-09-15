@@ -43,17 +43,21 @@ public class Book {
     @Column(name = "status")
     private BookStatus status;
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference // Указываем, что это родительская часть
     private List<BookAuthor> bookAuthors;
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<PhysicalCopy> physicalCopies;
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Ebook> ebooks;
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<BookRating> ratings; // Добавлено для каскадного удаления
 
     @ManyToMany
     @JoinTable(
@@ -64,7 +68,7 @@ public class Book {
     @JsonIgnore
     private Set<Faculty> faculties; // Связь с факультетами
 
-    @OneToOne(mappedBy = "book", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore // Игнорируем это поле при сериализации
     private BookEntry entry; // Запись о добавлении книги
 

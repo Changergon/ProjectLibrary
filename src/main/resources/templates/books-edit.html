@@ -87,21 +87,50 @@
 
         books.forEach(book => {
             const author = book.authorNames?.[0] || '—';
-            // Предполагается, что сервер возвращает поле addedById в DTO
             const canEdit = isAdmin || (book.addedById === currentUserId);
-            const editLink = canEdit ? `<a href="/books/edit?id=${book.bookId}">Редактировать</a>` : '—';
+
+            const editButton = canEdit ? `<button onclick="window.location.href='/books/edit?id=${book.bookId}'" class="action-btn edit-btn">Редактировать</button>` : '';
+            const deleteButton = canEdit ? `<button onclick="deleteBook(${book.bookId})" class="action-btn delete-btn">Удалить</button>` : '';
 
             const row = document.createElement('tr');
             row.innerHTML = `
-            <td>${book.title}</td>
-            <td>${author}</td>
-            <td>${book.publicationYear || '—'}</td>
-            <td>${editLink}</td>
-        `;
+                <td>${book.title}</td>
+                <td>${author}</td>
+                <td>${book.publicationYear || '—'}</td>
+                <td>
+                    <div class="actions-container">
+                        ${editButton}
+                        ${deleteButton}
+                    </div>
+                </td>
+            `;
             tableBody.appendChild(row);
         });
     }
 
+    // Функция для удаления книги
+    async function deleteBook(bookId) {
+        if (!confirm('Вы уверены, что хотите удалить эту книгу? Это действие необратимо.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/books/${bookId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                alert('Книга успешно удалена!');
+                loadBooks(); // Перезагружаем список книг
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error("Ошибка при удалении книги:", error);
+            alert(`Не удалось удалить книгу: ${error.message}`);
+        }
+    }
 
     // Функция для обновления пагинации
     function updatePagination(totalPages) {
@@ -155,8 +184,6 @@
         loadBooks();
     });
 
-
-
     let currentUserId = null; // Идентификатор текущего пользователя
     let isAdmin = false; // Флаг для проверки, является ли пользователь администратором
 
@@ -186,7 +213,6 @@
         `;
         }
     };
-
 
 </script>
 

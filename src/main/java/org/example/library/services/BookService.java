@@ -13,12 +13,16 @@ import org.example.library.repositories.BookEntryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -108,8 +112,33 @@ public class BookService {
 
     @Transactional
     public void deleteBook(Long bookId) {
-        logger.info("Deleting book with ID: {}", bookId);
-        bookRepository.deleteById(bookId);
+        logger.info("Attempting to delete book with ID: {}", bookId);
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + bookId));
+
+        // Delete associated file
+        if (book.getEbooks() != null && !book.getEbooks().isEmpty()) {
+            Ebook ebook = book.getEbooks().getFirst();
+            String fileName = ebook.getFileLocation();
+            if (fileName != null && !fileName.isEmpty()) {
+                try {
+                    Resource resource = new ClassPathResource("Storage/" + fileName);
+                    if (resource.exists()) {
+                        File file = resource.getFile();
+                        if (file.delete()) {
+                            logger.info("Successfully deleted file: {}", fileName);
+                        } else {
+                            logger.warn("Failed to delete file: {}", fileName);
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.error("Error while trying to delete file: {}", fileName, e);
+                }
+            }
+        }
+
+        bookRepository.delete(book);
+        logger.info("Successfully deleted book with ID: {}", bookId);
     }
 
     @Transactional
