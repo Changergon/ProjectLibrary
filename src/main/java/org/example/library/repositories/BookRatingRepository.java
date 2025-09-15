@@ -16,4 +16,6 @@ public interface BookRatingRepository extends JpaRepository<BookRating, Long> {
     @EntityGraph(attributePaths = {"book", "user"})
     List<BookRating> findByBookBookId(Long bookId);
 
+    void deleteAllByBookBookId(Long bookId);
+
 }

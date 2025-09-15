@@ -245,7 +245,14 @@ public class BookController {
         }
 
         try {
-            // Получаем путь к корню проекта
+            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+            String fileExtension = "";
+            int lastDot = originalFileName.lastIndexOf('.');
+            if (lastDot > 0) {
+                fileExtension = originalFileName.substring(lastDot);
+            }
+            String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+
             String projectRoot = new File("").getAbsolutePath();
             String directory = projectRoot + "/src/main/resources/Storage";
 
@@ -254,11 +261,10 @@ public class BookController {
                 throw new IOException("Не удалось создать директорию: " + dir.getAbsolutePath());
             }
 
-            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
-            File destinationFile = new File(dir, fileName);
+            File destinationFile = new File(dir, uniqueFileName);
 
             file.transferTo(destinationFile);
-            return fileName;
+            return uniqueFileName;
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при сохранении файла: " + e.getMessage(), e);
         }

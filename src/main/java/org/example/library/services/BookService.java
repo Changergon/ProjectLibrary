@@ -6,10 +6,7 @@ import org.example.library.exceptions.ResourceNotFoundException;
 import org.example.library.exceptions.UnauthorizedAccessException;
 import org.example.library.models.*;
 import org.example.library.models.DTO.BookDTO;
-import org.example.library.repositories.BookRatingRepository;
-import org.example.library.repositories.BookRepository;
-import org.example.library.repositories.EbookRepository;
-import org.example.library.repositories.BookEntryRepository;
+import org.example.library.repositories.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,15 +32,17 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final BookRatingRepository bookRatingRepository;
+    private final LibraryUserRepository libraryUserRepository;
     private final CustomUserDetailsService customUserDetailsService;
     private final EbookRepository ebookRepository;
     private final BookEntryRepository bookEntryRepository;
     private final FacultyService facultyService;
 
     @Autowired
-    public BookService(BookRepository bookRepository, BookRatingRepository bookRatingRepository, CustomUserDetailsService customUserDetailsService, EbookRepository ebookRepository, BookEntryRepository bookEntryRepository, FacultyService facultyService) {
+    public BookService(BookRepository bookRepository, BookRatingRepository bookRatingRepository, LibraryUserRepository libraryUserRepository, CustomUserDetailsService customUserDetailsService, EbookRepository ebookRepository, BookEntryRepository bookEntryRepository, FacultyService facultyService) {
         this.bookRepository = bookRepository;
         this.bookRatingRepository = bookRatingRepository;
+        this.libraryUserRepository = libraryUserRepository;
         this.customUserDetailsService = customUserDetailsService;
         this.ebookRepository = ebookRepository;
         this.bookEntryRepository = bookEntryRepository;
@@ -117,14 +116,25 @@ public class BookService {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + bookId));
 
-        // Remove the book from all users' bookshelves to avoid foreign key violations.
-        Set<LibraryUser> users = book.getUsersOnBookshelf();
-        if (users != null && !users.isEmpty()) {
-            logger.info("Book is on the shelf of {} users. Removing references.", users.size());
-            for (LibraryUser user : users) {
-                user.getBookshelf().remove(book);
+        // Clear last read book references
+        List<LibraryUser> usersWithLastRead = libraryUserRepository.findAllByLastReadBook(book);
+        if (!usersWithLastRead.isEmpty()) {
+            logger.info("Book is set as last read for {} users. Clearing references.", usersWithLastRead.size());
+            for (LibraryUser user : usersWithLastRead) {
+                user.setLastReadBook(null);
             }
         }
+
+        // Remove the book from all users' bookshelves
+        Set<LibraryUser> usersOnShelf = book.getUsersOnBookshelf();
+        if (usersOnShelf != null && !usersOnShelf.isEmpty()) {
+            logger.info("Book is on the shelf of {} users. Removing references.", usersOnShelf.size());
+            // Create a new list to avoid ConcurrentModificationException
+            new ArrayList<>(usersOnShelf).forEach(user -> user.getBookshelf().remove(book));
+        }
+
+        // Delete associated ratings
+        bookRatingRepository.deleteAllByBookBookId(bookId);
 
         // Delete associated file
         if (book.getEbooks() != null && !book.getEbooks().isEmpty()) {

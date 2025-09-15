@@ -1,5 +1,6 @@
 package org.example.library.repositories;
 
+import org.example.library.models.Book;
 import org.example.library.models.LibraryUser;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +23,6 @@ public interface LibraryUserRepository extends JpaRepository<LibraryUser, Long> 
     @Override
     @EntityGraph(attributePaths = {"roles", "faculties"})
     List<LibraryUser> findAll();
+
+    List<LibraryUser> findAllByLastReadBook(Book book);
 }
