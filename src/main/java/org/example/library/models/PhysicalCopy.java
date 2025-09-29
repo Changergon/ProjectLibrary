@@ -1,11 +1,14 @@
 package org.example.library.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -13,6 +16,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @Entity
 @Table(name = "physical_copies")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "copyId")
 public class PhysicalCopy {
 
     @Id
@@ -22,7 +26,6 @@ public class PhysicalCopy {
 
     @ManyToOne
     @JoinColumn(name = "book_id")
-    @JsonIgnore
     private Book book;
 
     @Column(name = "available")
@@ -47,6 +50,6 @@ public class PhysicalCopy {
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(copyId);
     }
 }

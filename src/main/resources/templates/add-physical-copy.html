@@ -1,57 +1,183 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
-    <title>Добавить физическую копию книги</title>
+    <meta charset="UTF-8">
+    <title>Добавить физическую копию</title>
+    <link rel="stylesheet" href="/navbar.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box; /* To include padding in width */
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
 <body>
-<h1>Добавить физическую копию книги</h1>
+<div th:replace="~{navbar :: navbar}"></div>
 
-<form id="addCopyForm">
-    <label for="bookId">ID книги:</label>
-    <input type="number" id="bookId" name="bookId" required /><br/><br/>
+<div class="container">
+    <h1>Добавить физическую копию</h1>
 
-    <label for="rowNumber">Номер ряда:</label>
-    <input type="number" id="rowNumber" name="rowNumber" required /><br/><br/>
+    <div id="message-container"></div>
 
-    <label for="shelfNumber">Номер полки:</label>
-    <input type="number" id="shelfNumber" name="shelfNumber" required /><br/><br/>
-
-    <label for="positionNumber">Номер позиции:</label>
-    <input type="number" id="positionNumber" name="positionNumber" required /><br/><br/>
-
-    <button type="button" onclick="submitForm()">Добавить</button>
-</form>
+    <form id="add-copy-form">
+        <div class="form-group">
+            <label for="book-select">Выберите книгу</label>
+            <select id="book-select" required>
+                <option value="">Загрузка...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="row-number">Номер ряда</label>
+            <input type="number" id="row-number" required>
+        </div>
+        <div class="form-group">
+            <label for="shelf-number">Номер полки</label>
+            <input type="number" id="shelf-number" required>
+        </div>
+        <div class="form-group">
+            <label for="position-number">Номер места</label>
+            <input type="number" id="position-number" required>
+        </div>
+        <button type="submit" class="submit-btn">Добавить копию</button>
+    </form>
+</div>
 
 <script>
-    async function submitForm() {
-        const form = document.getElementById('addCopyForm');
-        const data = {
-            bookId: Number(form.bookId.value),
-            rowNumber: Number(form.rowNumber.value),
-            shelfNumber: Number(form.shelfNumber.value),
-            positionNumber: Number(form.positionNumber.value)
+    document.addEventListener('DOMContentLoaded', function() {
+        populateBookSelect();
+
+        document.getElementById('add-copy-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            addCopy();
+        });
+    });
+
+    function populateBookSelect() {
+        // Используем эндпоинт, который возвращает все книги без пагинации, если такой есть,
+        // или просто запрашиваем с большим размером страницы.
+        fetch('/api/books/all?size=1000') // Предполагаем, что книг меньше 1000
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке списка книг.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const select = document.getElementById('book-select');
+                select.innerHTML = '<option value="">Выберите книгу...</option>'; // Очищаем и добавляем плейсхолдер
+
+                data.content.forEach(book => {
+                    const option = document.createElement('option');
+                    option.value = book.bookId;
+                    option.textContent = book.title;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                showMessage(error.message, 'error');
+            });
+    }
+
+    function addCopy() {
+        const bookId = document.getElementById('book-select').value;
+        const rowNumber = document.getElementById('row-number').value;
+        const shelfNumber = document.getElementById('shelf-number').value;
+        const positionNumber = document.getElementById('position-number').value;
+
+        if (!bookId) {
+            showMessage('Пожалуйста, выберите книгу.', 'error');
+            return;
+        }
+
+        const dto = {
+            bookId: parseInt(bookId),
+            rowNumber: parseInt(rowNumber),
+            shelfNumber: parseInt(shelfNumber),
+            positionNumber: parseInt(positionNumber)
         };
 
-        try {
-            const response = await fetch('/api/physical-copies', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
+        fetch('/api/librarian/physical-copies', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dto)
+        })
+        .then(response => {
             if (response.ok) {
-                alert('Физическая копия успешно добавлена!');
-                form.reset();
+                showMessage('Физическая копия успешно добавлена!', 'success');
+                document.getElementById('add-copy-form').reset(); // Очищаем форму
             } else {
-                const errorText = await response.text();
-                alert('Ошибка: ' + errorText);
+                throw new Error('Не удалось добавить копию.');
             }
-        } catch (err) {
-            alert('Ошибка: ' + err.message);
-        }
+        })
+        .catch(error => {
+            showMessage(error.message, 'error');
+        });
+    }
+
+    function showMessage(text, type) {
+        const container = document.getElementById('message-container');
+        container.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 3000);
     }
 </script>
 

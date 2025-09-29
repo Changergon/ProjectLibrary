@@ -8,13 +8,16 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.example.library.models.Book;
 import org.example.library.models.DTO.BookDTO;
+import org.example.library.models.DTO.RentalRequestDTO;
 import org.example.library.models.DTO.UserDTO;
 import org.example.library.models.DTO.UserLoginDTO;
 import org.example.library.models.DTO.UserRegistrationDTO;
 import org.example.library.models.LibraryUser ;
+import org.example.library.models.RentalRequest;
 import org.example.library.models.Role;
 import org.example.library.services.BookService;
 import org.example.library.services.FacultyService;
+import org.example.library.services.RentalRequestService;
 import org.example.library.services.UserService;
 import org.example.library.exceptions.UserAlreadyExistsException;
 import org.slf4j.Logger;
@@ -48,6 +51,9 @@ public class UserController {
 
     @Autowired
     private BookService bookService;
+
+    @Autowired
+    private RentalRequestService rentalRequestService;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -254,6 +260,19 @@ public class UserController {
                     .map(book -> bookService.convertToDTO(book, userId))
                     .collect(Collectors.toList());
             return ResponseEntity.ok(bookDTOs);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{userId}/rental-requests")
+    public ResponseEntity<List<RentalRequestDTO>> getUserRentalRequests(@PathVariable Long userId) {
+        try {
+            List<RentalRequest> requests = rentalRequestService.findUserRequests(userId);
+            List<RentalRequestDTO> dtos = requests.stream()
+                    .map(rentalRequestService::convertToDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(dtos);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }

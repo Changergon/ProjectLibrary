@@ -1,6 +1,9 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +20,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "books")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "bookId")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // Игнорируем служебные поля Hibernate
 public class Book {
 
     @Id
@@ -48,6 +53,9 @@ public class Book {
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Ebook> ebooks;
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PhysicalCopy> physicalCopies;
 
     @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private BookEntry entry;

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель библиотекаря</title>
+    <link rel="stylesheet" href="/navbar.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #444;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        thead {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            margin-right: 5px;
+        }
+        .approve-btn { background-color: #28a745; } /* Зеленый */
+        .reject-btn { background-color: #dc3545; } /* Красный */
+        .issue-btn { background-color: #17a2b8; }   /* Голубой */
+        .return-btn { background-color: #ffc107; } /* Желтый */
+        .overdue-row td { background-color: #f8d7da !important; } /* Розовый фон для просроченных */
+
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .message.success { background-color: #d4edda; color: #155724; }
+        .message.error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+<div th:replace="~{navbar :: navbar}"></div>
+
+<div class="container">
+    <h1>Панель управления библиотекаря</h1>
+    <div id="message-container"></div>
+
+    <section id="pending-requests">
+        <h2>Новые запросы на аренду</h2>
+        <table id="pending-table"></table>
+    </section>
+
+    <section id="approved-requests" style="margin-top: 40px;">
+        <h2>Готовы к выдаче</h2>
+        <table id="approved-table"></table>
+    </section>
+
+    <section id="active-requests" style="margin-top: 40px;">
+        <h2>Книги на руках</h2>
+        <table id="active-table"></table>
+    </section>
+
+    <section id="overdue-requests" style="margin-top: 40px;">
+        <h2>Просроченные аренды</h2>
+        <table id="overdue-table"></table>
+    </section>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchAllRequests();
+    });
+
+    function fetchAllRequests() {
+        fetchPendingRequests();
+        fetchApprovedRequests();
+        fetchActiveRequests();
+        fetchOverdueRequests();
+    }
+
+    // --- FETCH FUNCTIONS --- //
+    function fetchPendingRequests() {
+        fetchAndRender('/api/rental-requests', 'pending-table', createPendingActions, ['ID', 'Пользователь', 'Книга', 'Расположение', 'Действия']);
+    }
+    function fetchApprovedRequests() {
+        fetchAndRender('/api/rental-requests/approved', 'approved-table', createApprovedActions, ['ID', 'Пользователь', 'Книга', 'Действия']);
+    }
+    function fetchActiveRequests() {
+        fetchAndRender('/api/rental-requests/active', 'active-table', createActiveActions, ['ID', 'Пользователь', 'Книга', 'Дата выдачи', 'Вернуть до', 'Действия']);
+    }
+    function fetchOverdueRequests() {
+        fetchAndRender('/api/rental-requests/overdue', 'overdue-table', createOverdueActions, ['ID', 'Пользователь', 'Книга', 'Дата выдачи', 'Просрочено с']);
+    }
+
+    // --- ACTION FUNCTIONS --- //
+    function approveRequest(requestId) {
+        fetch(`/api/rental-requests/approve/${requestId}`, { method: 'POST' })
+            .then(handleResponse).then(() => {
+                showMessage('Запрос успешно одобрен.', 'success');
+                fetchAllRequests();
+            }).catch(handleError);
+    }
+
+    function rejectRequest(requestId) {
+        fetch(`/api/rental-requests/reject/${requestId}`, { method: 'POST' })
+            .then(handleResponse).then(() => {
+                showMessage('Запрос отклонен.', 'success');
+                fetchAllRequests();
+            }).catch(handleError);
+    }
+
+    function issueBook(requestId) {
+        fetch(`/api/rental-requests/issue/${requestId}`, { method: 'POST' })
+            .then(handleResponse).then(() => {
+                showMessage('Книга успешно выдана.', 'success');
+                fetchAllRequests();
+            }).catch(handleError);
+    }
+
+    function returnBook(requestId) {
+        fetch(`/api/rental-requests/return/${requestId}`, { method: 'POST' })
+            .then(handleResponse).then(() => {
+                showMessage('Книга успешно возвращена.', 'success');
+                fetchAllRequests();
+            }).catch(handleError);
+    }
+
+    // --- HTML CREATION --- //
+    function createPendingActions(req) {
+        return `<td>${req.id}</td><td>${req.username}</td><td>${req.bookTitle}</td><td>Ряд: ${req.rowNumber}, Полка: ${req.shelfNumber}, Место: ${req.positionNumber}</td><td><button class="action-btn approve-btn" onclick="approveRequest(${req.id})">Одобрить</button><button class="action-btn reject-btn" onclick="rejectRequest(${req.id})">Отклонить</button></td>`;
+    }
+
+    function createApprovedActions(req) {
+        return `<td>${req.id}</td><td>${req.username}</td><td>${req.bookTitle}</td><td><button class="action-btn issue-btn" onclick="issueBook(${req.id})">Выдать</button></td>`;
+    }
+
+    function createActiveActions(req) {
+        const dueDate = new Date(req.rentalDueDate).toLocaleDateString();
+        const startDate = new Date(req.rentalStartDate).toLocaleDateString();
+        return `<td>${req.id}</td><td>${req.username}</td><td>${req.bookTitle}</td><td>${startDate}</td><td>${dueDate}</td><td><button class="action-btn return-btn" onclick="returnBook(${req.id})">Принять возврат</button></td>`;
+    }
+
+    function createOverdueActions(req) {
+        const dueDate = new Date(req.rentalDueDate).toLocaleDateString();
+        const startDate = new Date(req.rentalStartDate).toLocaleDateString();
+        return `<tr class="overdue-row"><td>${req.id}</td><td>${req.username}</td><td>${req.bookTitle}</td><td>${startDate}</td><td>${dueDate}</td></tr>`;
+    }
+
+    // --- UTILITY FUNCTIONS --- //
+    function fetchAndRender(url, tableId, rowCreator, headers) {
+        fetch(url)
+            .then(response => response.ok ? response.json() : Promise.reject(`Ошибка загрузки для ${tableId}`))
+            .then(requests => {
+                const table = document.getElementById(tableId);
+                table.innerHTML = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody></tbody>`;
+                const tableBody = table.querySelector('tbody');
+                if (requests.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="text-align: center;">Нет данных.</td></tr>`;
+                    return;
+                }
+                requests.forEach(req => {
+                    const row = tableBody.insertRow();
+                    row.innerHTML = rowCreator(req);
+                });
+            })
+            .catch(handleError);
+    }
+
+    function handleResponse(response) {
+        if (!response.ok) throw new Error('Операция не удалась.');
+        return response;
+    }
+
+    function handleError(error) {
+        showMessage(error.message, 'error');
+    }
+
+    function showMessage(text, type) {
+        const container = document.getElementById('message-container');
+        container.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => { container.innerHTML = ''; }, 3000);
+    }
+</script>
+
+</body>
+</html>

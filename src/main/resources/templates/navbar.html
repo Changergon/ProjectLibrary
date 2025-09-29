@@ -14,10 +14,14 @@
     <div class="nav-links">
         <a href="/books" class="nav-link">Книги</a>
         <a href="/bookshelf" class="nav-link" sec:authorize="isAuthenticated()">Моя полка</a>
+        <a href="/rent-books" class="nav-link" sec:authorize="isAuthenticated()">Аренда книг</a>
+        <a href="/my-rentals" class="nav-link" sec:authorize="isAuthenticated()">Мои аренды</a>
 
         <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/add-book" class="nav-link">Добавить книгу</a>
         <a sec:authorize="hasRole('TEACHER') or hasRole('ADMIN')" href="/books-edit" class="nav-link">Редактировать книги</a>
 
+        <a sec:authorize="hasAnyRole('LIBRARIAN', 'ADMIN')" href="/librarian-dashboard" class="nav-link">Панель библиотекаря</a>
+        <a sec:authorize="hasAnyRole('LIBRARIAN', 'ADMIN')" href="/add-physical-copy" class="nav-link">Добавить копию</a>
         <a sec:authorize="hasRole('ADMIN')" href="/admin" class="nav-link">Управление пользователями</a>
     </div>
 

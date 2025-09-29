@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class PhysicalCopyService {
 
@@ -28,7 +30,6 @@ public class PhysicalCopyService {
     @Transactional
     public PhysicalCopy addPhysicalCopy(Long bookId, int rowNumber, int shelfNumber, int positionNumber) {
         logger.info("Adding physical copy for book ID: {}", bookId);
-        // bookRepository.findById is already optimized and throws EntityNotFoundException
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException("Cannot add physical copy. Book not found with id: " + bookId));
 
@@ -42,5 +43,17 @@ public class PhysicalCopyService {
         PhysicalCopy savedCopy = physicalCopyRepository.save(copy);
         logger.info("Successfully added physical copy with ID: {} for book ID: {}", savedCopy.getCopyId(), bookId);
         return savedCopy;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhysicalCopy> findAvailableCopies(Long bookId) {
+        logger.info("Searching for available copies for book ID: {}", bookId);
+        return physicalCopyRepository.findAllByBook_BookIdAndAvailable(bookId, true);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PhysicalCopy> findAllAvailable() {
+        logger.info("Searching for all available copies.");
+        return physicalCopyRepository.findByAvailable(true);
     }
 }

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои аренды</title>
+    <link rel="stylesheet" href="/navbar.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        thead {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .status {
+            font-weight: bold;
+        }
+        .status-PENDING { color: #ffc107; } /* Желтый */
+        .status-APPROVED { color: #28a745; } /* Зеленый */
+        .status-ACTIVE { color: #17a2b8; }   /* Голубой */
+        .status-REJECTED { color: #dc3545; } /* Красный */
+        .status-RETURNED { color: #6c757d; }  /* Серый */
+    </style>
+</head>
+<body>
+<div th:replace="~{navbar :: navbar}"></div>
+
+<div class="container">
+    <h1>Мои заявки на аренду</h1>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Книга</th>
+            <th>Статус</th>
+            <th>Дата начала аренды</th>
+            <th>Вернуть до</th>
+        </tr>
+        </thead>
+        <tbody id="my-rentals-body">
+        <!-- Данные будут загружены через JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    let currentUserId = null;
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        await fetchCurrentUserAndThenRentals();
+    });
+
+    async function fetchCurrentUserAndThenRentals() {
+        try {
+            const response = await fetch('/api/users/current');
+            if (!response.ok) {
+                window.location.href = '/login';
+                return;
+            }
+            const user = await response.json();
+            currentUserId = user.userId;
+            fetchMyRentals();
+        } catch (error) {
+            console.error('Ошибка при получении пользователя:', error);
+        }
+    }
+
+    function fetchMyRentals() {
+        if (!currentUserId) return;
+
+        // Этот эндпоинт нам нужно будет создать
+        fetch(`/api/users/${currentUserId}/rental-requests`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке ваших заявок.');
+                }
+                return response.json();
+            })
+            .then(requests => {
+                const tableBody = document.getElementById('my-rentals-body');
+                tableBody.innerHTML = '';
+
+                if (requests.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">У вас нет активных или ожидающих заявок.</td></tr>';
+                    return;
+                }
+
+                requests.forEach(request => {
+                    const row = document.createElement('tr');
+                    const formattedStartDate = request.rentalStartDate ? new Date(request.rentalStartDate).toLocaleDateString() : '—';
+                    const formattedDueDate = request.rentalDueDate ? new Date(request.rentalDueDate).toLocaleDateString() : '—';
+
+                    row.innerHTML = `
+                        <td>${request.bookTitle}</td>
+                        <td><span class="status status-${request.status}">${translateStatus(request.status)}</span></td>
+                        <td>${formattedStartDate}</td>
+                        <td>${formattedDueDate}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                const tableBody = document.getElementById('my-rentals-body');
+                tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center;">${error.message}</td></tr>`;
+            });
+    }
+
+    function translateStatus(status) {
+        const translations = {
+            'PENDING': 'Ожидает одобрения',
+            'APPROVED': 'Готово к выдаче',
+            'ACTIVE': 'На руках',
+            'REJECTED': 'Отклонено',
+            'RETURNED': 'Возвращено',
+            'COMPLETED': 'Завершено'
+        };
+        return translations[status] || status;
+    }
+</script>
+
+</body>
+</html>

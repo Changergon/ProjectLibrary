@@ -1,77 +1,128 @@
 package org.example.library.controllers;
 
+import org.example.library.models.DTO.RentalRequestDTO;
+import org.example.library.models.LibraryUser;
 import org.example.library.models.PhysicalCopy;
 import org.example.library.models.RentalRequest;
+import org.example.library.services.PhysicalCopyService;
 import org.example.library.services.RentalRequestService;
+import org.example.library.services.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/rental-requests")
 public class RentalRequestController {
 
     private final RentalRequestService rentalRequestService;
+    private final PhysicalCopyService physicalCopyService;
+    private final UserService userService;
 
-    public RentalRequestController(RentalRequestService rentalRequestService) {
+    public RentalRequestController(RentalRequestService rentalRequestService, PhysicalCopyService physicalCopyService, UserService userService) {
         this.rentalRequestService = rentalRequestService;
+        this.physicalCopyService = physicalCopyService;
+        this.userService = userService;
     }
 
-    @PostMapping
-    public ResponseEntity<RentalRequest> createRentalRequest(@RequestBody RentalRequest request) {
-        RentalRequest createdRequest = rentalRequestService.createRentalRequest(request);
-        return ResponseEntity.ok(createdRequest);
+    @PostMapping("/copy/{copyId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<RentalRequestDTO> createRentalRequest(@PathVariable Long copyId, Principal principal) {
+        try {
+            LibraryUser currentUser = userService.findByUsername(principal.getName());
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            RentalRequest createdRequest = rentalRequestService.createRequest(currentUser.getUserId(), copyId);
+            return ResponseEntity.ok(rentalRequestService.convertToDTO(createdRequest));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    // Returns all PENDING requests by default
     @GetMapping
-    public ResponseEntity<List<RentalRequest>> getPendingRentalRequests() {
-        List<RentalRequest> requests = rentalRequestService.getPendingRentalRequests();
-        return ResponseEntity.ok(requests);
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    public ResponseEntity<List<RentalRequestDTO>> getPendingRentalRequests() {
+        List<RentalRequest> requests = rentalRequestService.findAllPendingRequests();
+        List<RentalRequestDTO> dtos = requests.stream().map(rentalRequestService::convertToDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/approved")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    public ResponseEntity<List<RentalRequestDTO>> getApprovedRentalRequests() {
+        List<RentalRequest> requests = rentalRequestService.findAllApprovedRequests();
+        List<RentalRequestDTO> dtos = requests.stream().map(rentalRequestService::convertToDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @PostMapping("/approve/{id}")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
     public ResponseEntity<Void> approveRentalRequest(@PathVariable Long id) {
-        rentalRequestService.approveRentalRequest(id);
+        rentalRequestService.approveRequest(id);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reject/{id}")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
     public ResponseEntity<Void> rejectRentalRequest(@PathVariable Long id) {
-        rentalRequestService.rejectRentalRequest(id);
+        rentalRequestService.rejectRequest(id);
         return ResponseEntity.ok().build();
     }
 
-    // Returns all ACTIVE rental requests (books currently rented out)
-    @GetMapping("/active")
-    public ResponseEntity<List<RentalRequest>> getActiveRentalRequests() {
-        List<RentalRequest> rentedBooks = rentalRequestService.getActiveRentalRequests();
-        return ResponseEntity.ok(rentedBooks);
+    @PostMapping("/issue/{id}")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    public ResponseEntity<Void> issueBook(@PathVariable Long id) {
+        try {
+            rentalRequestService.issueBook(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    // Returns all COMPLETED rental requests
+    @GetMapping("/active")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    public ResponseEntity<List<RentalRequestDTO>> getActiveRentalRequests() {
+        List<RentalRequest> rentedBooks = rentalRequestService.getActiveRentalRequests();
+        List<RentalRequestDTO> dtos = rentedBooks.stream().map(rentalRequestService::convertToDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
     @GetMapping("/completed")
-    public ResponseEntity<List<RentalRequest>> getCompletedRentalRequests() {
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    public ResponseEntity<List<RentalRequestDTO>> getCompletedRentalRequests() {
         List<RentalRequest> completedRequests = rentalRequestService.getCompletedRentalRequests();
-        return ResponseEntity.ok(completedRequests);
+        List<RentalRequestDTO> dtos = completedRequests.stream().map(rentalRequestService::convertToDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/overdue")
-    public ResponseEntity<List<RentalRequest>> getOverdueRentals() {
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    public ResponseEntity<List<RentalRequestDTO>> getOverdueRentals() {
         List<RentalRequest> overdue = rentalRequestService.getOverdueRentals();
-        return ResponseEntity.ok(overdue);
+        List<RentalRequestDTO> dtos = overdue.stream().map(rentalRequestService::convertToDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @PostMapping("/return/{id}")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
     public ResponseEntity<Void> returnBook(@PathVariable Long id) {
         rentalRequestService.returnBook(id);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/available-copies")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<PhysicalCopy>> getAvailableCopies() {
-        List<PhysicalCopy> availableCopies = rentalRequestService.getAvailableCopies();
+        List<PhysicalCopy> availableCopies = physicalCopyService.findAllAvailable();
         return ResponseEntity.ok(availableCopies);
     }
 }
