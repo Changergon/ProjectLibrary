@@ -13,6 +13,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -110,9 +112,15 @@ public class BookController {
 
     @GetMapping("/editable")
     public ResponseEntity<Page<BookDTO>> getEditableBooks(@RequestParam Long userId,
-                                                          @RequestParam int page,
-                                                          @RequestParam int size) {
-        Page<Book> books = bookService.getBooksForEditing(userId, page, size);
+                                                          @RequestParam(required = false) String query,
+                                                          @RequestParam(defaultValue = "0") int page,
+                                                          @RequestParam(defaultValue = "10") int size) {
+        LibraryUser currentUser = customUserDetailsService.getUserById(userId);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Book> books = bookService.getBooksForEditing(currentUser, query, pageable);
         return ResponseEntity.ok(books.map(book -> bookService.convertToDTO(book, userId)));
     }
 
@@ -131,18 +139,15 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
-    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and @bookService.isBookAddedByUser(#id, principal.username))")
+    public ResponseEntity<Void> deleteBook(@PathVariable Long id, Principal principal) {
         try {
             bookService.deleteBook(id);
             return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 
 
     // Загрузка новой книги
@@ -240,7 +245,14 @@ public class BookController {
         }
 
         try {
-            // Получаем путь к корню проекта
+            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+            String fileExtension = "";
+            int lastDot = originalFileName.lastIndexOf('.');
+            if (lastDot > 0) {
+                fileExtension = originalFileName.substring(lastDot);
+            }
+            String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+
             String projectRoot = new File("").getAbsolutePath();
             String directory = projectRoot + "/src/main/resources/Storage";
 
@@ -249,11 +261,10 @@ public class BookController {
                 throw new IOException("Не удалось создать директорию: " + dir.getAbsolutePath());
             }
 
-            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
-            File destinationFile = new File(dir, fileName);
+            File destinationFile = new File(dir, uniqueFileName);
 
             file.transferTo(destinationFile);
-            return fileName;
+            return uniqueFileName;
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при сохранении файла: " + e.getMessage(), e);
         }

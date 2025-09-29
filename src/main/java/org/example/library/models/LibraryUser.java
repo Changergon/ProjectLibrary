@@ -1,6 +1,9 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,6 +18,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Entity
 @Table(name = "library_users")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "userId")
+@JsonIgnoreProperties(value = {"lastReadBook", "bookshelf"}, allowSetters = true)
 public class LibraryUser {
 
     @Id
@@ -38,7 +43,6 @@ public class LibraryUser {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     @ToString.Exclude
-    @JsonIgnore
     private Set<Role> roles = new HashSet<>();
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -48,12 +52,19 @@ public class LibraryUser {
             inverseJoinColumns = @JoinColumn(name = "faculty_id")
     )
     @ToString.Exclude
-    @JsonIgnore
     private Set<Faculty> faculties = new HashSet<>();
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "user_bookshelf",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "book_id")
+    )
+    @ToString.Exclude
+    private Set<Book> bookshelf = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_read_book_id")
-    @JsonIgnore
     private Book lastReadBook;
 
     @Override

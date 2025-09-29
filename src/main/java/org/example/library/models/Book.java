@@ -1,7 +1,9 @@
 package org.example.library.models;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Getter
@@ -17,6 +20,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "books")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "bookId")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // Игнорируем служебные поля Hibernate
 public class Book {
 
     @Id
@@ -24,7 +29,7 @@ public class Book {
     @Column(name = "book_id")
     private Long bookId;
 
-    @Column(name = "title")
+    @Column(name = "title", nullable = false)
     private String title;
 
     @Column(name = "isbn")
@@ -33,7 +38,7 @@ public class Book {
     @Column(name = "publication_year")
     private int publicationYear;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "publisher")
@@ -44,57 +49,39 @@ public class Book {
     private BookStatus status;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // Указываем, что это родительская часть
     private List<BookAuthor> bookAuthors;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<PhysicalCopy> physicalCopies;
-
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
     private List<Ebook> ebooks;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<BookRating> ratings; // Добавлено для каскадного удаления
+    private List<PhysicalCopy> physicalCopies;
 
-    @ManyToMany
+    @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private BookEntry entry;
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "book_faculty",
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "faculty_id")
     )
-    @JsonIgnore
-    private Set<Faculty> faculties; // Связь с факультетами
+    private Set<Faculty> faculties;
 
-    @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore // Игнорируем это поле при сериализации
-    private BookEntry entry; // Запись о добавлении книги
+    @ManyToMany(mappedBy = "bookshelf")
+    @JsonIgnore
+    private Set<LibraryUser> usersOnBookshelf;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Book book = (Book) o;
+        return Objects.equals(bookId, book.bookId);
+    }
 
     @Override
     public int hashCode() {
-        return bookId != null ? bookId.hashCode() : 0; // Используем bookId для хэш-кода
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Book book)) return false;
-        return bookId != null && bookId.equals(book.getBookId());
-    }
-
-    @Override
-    public String toString() {
-        return "Book{" +
-                "bookId=" + bookId +
-                ", title='" + title + '\'' +
-                ", isbn='" + isbn + '\'' +
-                ", publicationYear=" + publicationYear +
-                ", description='" + description + '\'' +
-                ", publisher='" + publisher + '\'' +
-                ", status=" + status +
-                ", authorsCount=" + (bookAuthors != null ? bookAuthors.size() : 0) + // Указываем только количество авторов
-                '}';
+        return Objects.hash(bookId);
     }
 }

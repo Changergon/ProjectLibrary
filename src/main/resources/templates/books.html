@@ -6,6 +6,7 @@
     <title>Книги</title>
     <link rel="stylesheet" href="/books.css">
     <link rel="stylesheet" href="/navbar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 <div th:replace="~{navbar :: navbar}"></div>
@@ -157,6 +158,16 @@
                             });
                             card.appendChild(readButton);
 
+                            // Создаем кнопку "Добавить на полку"
+                            const shelfButton = document.createElement('button');
+                            shelfButton.className = 'bookshelf-btn';
+                            shelfButton.innerHTML = '<i class="fas fa-bookmark"></i>';
+                            shelfButton.title = 'Добавить на книжную полку';
+                            shelfButton.addEventListener('click', () => {
+                                addBookToBookshelf(book.bookId, currentUserId);
+                            });
+                            card.appendChild(shelfButton);
+
                             bookList.appendChild(card);
                         });
                     } else {
@@ -170,8 +181,25 @@
                 }
             }
 
-
-
+            async function addBookToBookshelf(bookId, userId) {
+                if (!userId) {
+                    alert('Пожалуйста, войдите в систему, чтобы добавить книгу на полку.');
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/users/${userId}/bookshelf/${bookId}`, {
+                        method: 'POST'
+                    });
+                    if (response.ok) {
+                        alert('Книга успешно добавлена на вашу полку!');
+                    } else {
+                        throw new Error('Не удалось добавить книгу. Возможно, она уже на полке.');
+                    }
+                } catch (error) {
+                    console.error('Ошибка при добавлении книги на полку:', error);
+                    alert(error.message);
+                }
+            }
 
 
             async function searchBooks(query) {

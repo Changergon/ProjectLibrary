@@ -1,6 +1,7 @@
 package org.example.library.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -15,6 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "rental_requests")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class RentalRequest {
 
     @Id
@@ -23,12 +26,10 @@ public class RentalRequest {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore
     private LibraryUser user;
 
     @ManyToOne
     @JoinColumn(name = "physical_copy_id", nullable = false)
-    @JsonIgnore
     private PhysicalCopy physicalCopy;
 
     @Column(name = "rental_start_date")
@@ -51,6 +52,6 @@ public class RentalRequest {
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(id);
     }
 }

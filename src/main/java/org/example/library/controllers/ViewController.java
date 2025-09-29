@@ -39,6 +39,19 @@ public class ViewController {
         return "books";
     }
 
+    @GetMapping("/bookshelf")
+    public String bookshelf(Model model) {
+        addCurrentUserToModel(model);
+        return "bookshelf";
+    }
+
+    @GetMapping("/my-rentals")
+    @PreAuthorize("isAuthenticated()")
+    public String myRentals(Model model) {
+        addCurrentUserToModel(model);
+        return "my-rentals";
+    }
+
     @GetMapping("/books/read")
     public String readBooks(Model model) {
         return "reader"; // Возврат имени шаблона для отображения списка книг
@@ -61,11 +74,31 @@ public class ViewController {
         return "admin";
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    @GetMapping("/librarian-dashboard")
+    public String librarianDashboard(Model model) {
+        addCurrentUserToModel(model);
+        return "librarian-dashboard";
+    }
+
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
     @GetMapping("/add-book")
     public String addBook(Model model, Principal principal) {
         addCurrentUserToModel(model);
         return "addbook";
+    }
+
+    @GetMapping("/rent-books")
+    @PreAuthorize("isAuthenticated()")
+    public String showRentBooksPage(Model model) {
+        addCurrentUserToModel(model);
+        return "rent-books";
+    }
+
+    @GetMapping("/add-physical-copy")
+    @PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+    public String showAddPhysicalCopyPage() {
+        return "add-physical-copy";
     }
 
     // Метод для добавления текущего пользователя в модель
