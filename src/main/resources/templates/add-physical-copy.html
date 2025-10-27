@@ -109,9 +109,7 @@
     });
 
     function populateBookSelect() {
-        // Используем эндпоинт, который возвращает все книги без пагинации, если такой есть,
-        // или просто запрашиваем с большим размером страницы.
-        fetch('/api/books/all?size=1000') // Предполагаем, что книг меньше 1000
+        fetch('/api/books/all?size=1000')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Ошибка при загрузке списка книг.');
@@ -120,7 +118,7 @@
             })
             .then(data => {
                 const select = document.getElementById('book-select');
-                select.innerHTML = '<option value="">Выберите книгу...</option>'; // Очищаем и добавляем плейсхолдер
+                select.innerHTML = '<option value="">Выберите книгу...</option>';
 
                 data.content.forEach(book => {
                     const option = document.createElement('option');
@@ -159,10 +157,13 @@
             },
             body: JSON.stringify(dto)
         })
-        .then(response => {
+        .then(async response => {
             if (response.ok) {
                 showMessage('Физическая копия успешно добавлена!', 'success');
-                document.getElementById('add-copy-form').reset(); // Очищаем форму
+                document.getElementById('add-copy-form').reset();
+            } else if (response.status === 409) {
+                const errorMessage = await response.text();
+                throw new Error(errorMessage || 'Это место уже занято.');
             } else {
                 throw new Error('Не удалось добавить копию.');
             }

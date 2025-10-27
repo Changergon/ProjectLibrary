@@ -115,10 +115,10 @@
 
                 copies.forEach(copy => {
                     const row = document.createElement('tr');
-                    const authors = copy.book.bookAuthors.map(ba => `${ba.author.firstName} ${ba.author.lastName}`).join(', ');
+                    const authors = copy.authorNames.join(', ');
 
                     row.innerHTML = `
-                        <td>${copy.book.title}</td>
+                        <td>${copy.bookTitle}</td>
                         <td>${authors}</td>
                         <td>${copy.rowNumber}-${copy.shelfNumber}-${copy.positionNumber}</td>
                         <td>
@@ -138,15 +138,13 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // CSRF токен будет добавлен автоматически Spring Security
             }
         })
         .then(response => {
             if (response.ok) {
                 showMessage('Запрос на аренду успешно отправлен!', 'success');
-                // Обновляем список, чтобы убрать запрошенную книгу
                 fetchAvailableCopies();
-            } else if (response.status === 409) { // Conflict
+            } else if (response.status === 409) {
                 throw new Error('Вы уже запросили эту книгу или она стала недоступна.');
             } else {
                 throw new Error('Не удалось отправить запрос.');
@@ -162,7 +160,7 @@
         container.innerHTML = `<div class="message ${type}">${text}</div>`;
         setTimeout(() => {
             container.innerHTML = '';
-        }, 5000); // Сообщение исчезнет через 5 секунд
+        }, 5000);
     }
 </script>
 

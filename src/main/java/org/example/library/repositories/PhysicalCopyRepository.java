@@ -16,4 +16,6 @@ public interface PhysicalCopyRepository extends JpaRepository<PhysicalCopy, Long
 
     @EntityGraph(attributePaths = {"book"})
     List<PhysicalCopy> findAllByBook_BookIdAndAvailable(Long bookId, boolean available);
+
+    boolean existsByRowNumberAndShelfNumberAndPositionNumber(int rowNumber, int shelfNumber, int positionNumber);
 }

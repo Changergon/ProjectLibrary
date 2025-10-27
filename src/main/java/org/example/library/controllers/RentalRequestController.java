@@ -1,5 +1,6 @@
 package org.example.library.controllers;
 
+import org.example.library.models.DTO.PhysicalCopyDTO;
 import org.example.library.models.DTO.RentalRequestDTO;
 import org.example.library.models.LibraryUser;
 import org.example.library.models.PhysicalCopy;
@@ -121,8 +122,11 @@ public class RentalRequestController {
 
     @GetMapping("/available-copies")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<PhysicalCopy>> getAvailableCopies() {
+    public ResponseEntity<List<PhysicalCopyDTO>> getAvailableCopies() {
         List<PhysicalCopy> availableCopies = physicalCopyService.findAllAvailable();
-        return ResponseEntity.ok(availableCopies);
+        List<PhysicalCopyDTO> dtos = availableCopies.stream()
+                .map(physicalCopyService::convertToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 }
