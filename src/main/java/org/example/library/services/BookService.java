@@ -1,131 +1,84 @@
 package org.example.library.services;
 
-import jakarta.persistence.EntityNotFoundException;
-import org.example.library.models.*;
-import org.example.library.repositories.BookEntryRepository;
+import org.example.library.domain.Book;
+import org.example.library.dto.BookRequest;
+import org.example.library.dto.BookResponse;
+import org.example.library.dto.PageBookResponse;
+import org.example.library.exception.ResourceNotFoundException;
 import org.example.library.repositories.BookRepository;
-import org.example.library.repositories.EbookRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class BookService {
 
-    private static final Logger logger = LoggerFactory.getLogger(BookService.class);
+    private final BookRepository bookRepository;
 
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private EbookRepository ebookRepository;
-
-    @Autowired
-    private BookEntryRepository bookEntryRepository; // Добавьте BookEntryRepository
-
-    @Autowired
-    private FacultyService facultyService; // Внедряем FacultyService
-
-    public List<Book> searchBooks(String title) {
-        logger.info("Searching for books with title containing: {}", title);
-        return bookRepository.findByTitleContaining(title);
+    public BookService(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
     }
 
-    public Book getBookById(Long bookId) {
-        logger.info("Fetching book with ID: {}", bookId);
-        return bookRepository.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("Book not found with ID: " + bookId));
-    }
-
-    public void downloadEbook(Long ebookId) {
-        logger.info("Downloading ebook with ID: {}", ebookId);
-        Ebook ebook = ebookRepository.findById(ebookId).orElse(null);
-        if (ebook != null && ebook.getBook() != null) {
-            logger.info("Ebook found: {}", ebook.getBook().getTitle());
-            // Логика для скачивания
+    public PageBookResponse getBooks(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Book> bookPage;
+        if (search != null && !search.isEmpty()) {
+            bookPage = bookRepository.findByTitleContainingIgnoreCase(search, pageable);
         } else {
-            logger.warn("Ebook with ID {} not found", ebookId);
+            bookPage = bookRepository.findAll(pageable);
         }
+
+        List<BookResponse> bookResponses = bookPage.getContent().stream()
+                .map(this::convertToBookResponse)
+                .collect(Collectors.toList());
+
+        PageBookResponse pageBookResponse = new PageBookResponse();
+        pageBookResponse.setContent(bookResponses);
+        pageBookResponse.setTotalElements(bookPage.getTotalElements());
+        pageBookResponse.setTotalPages(bookPage.getTotalPages());
+        pageBookResponse.setCurrentPage(bookPage.getNumber());
+        pageBookResponse.setPageSize(bookPage.getSize());
+
+        return pageBookResponse;
     }
 
-    public Book uploadBook(Book book, LibraryUser addedBy) {
-        logger.info("Uploading book: {}", book.getTitle());
-
-        // Сохранение книги
-        Book savedBook = bookRepository.save(book);
-
-        // Создание записи о добавлении книги
-        BookEntry bookEntry = new BookEntry();
-        bookEntry.setBook(savedBook);
-        bookEntry.setAddedBy(addedBy);
-        bookEntry.setAddedAt(LocalDateTime.now());
-
-        // Сохранение записи о добавлении
-        bookEntryRepository.save(bookEntry); // Теперь это будет работать
-
-        return savedBook;
+    public BookResponse getBookById(UUID id) {
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+        return convertToBookResponse(book);
     }
 
-    public void deleteBook(Long bookId) {
-        logger.info("Deleting book with ID: {}", bookId);
-        bookRepository.deleteById(bookId);
+    public BookResponse createBook(BookRequest bookRequest) {
+        Book book = new Book();
+        BeanUtils.copyProperties(bookRequest, book);
+        book = bookRepository.save(book);
+        return convertToBookResponse(book);
     }
 
-    public void saveEbook(Ebook ebook) {
-        if (ebook.getBook() != null) {
-            logger.info("Saving ebook for book: {}", ebook.getBook().getTitle());
-        } else {
-            logger.info("Saving ebook with no associated book.");
+    public BookResponse updateBook(UUID id, BookRequest bookRequest) {
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+        BeanUtils.copyProperties(bookRequest, book);
+        book = bookRepository.save(book);
+        return convertToBookResponse(book);
+    }
+
+    public void deleteBook(UUID id) {
+        if (!bookRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Book not found with id: " + id);
         }
-        ebookRepository.save(ebook);
+        bookRepository.deleteById(id);
     }
 
-    public List<Book> getAllBooks() {
-        logger.info("Fetching all books");
-        return bookRepository.findAll();
+    private BookResponse convertToBookResponse(Book book) {
+        BookResponse bookResponse = new BookResponse();
+        BeanUtils.copyProperties(book, bookResponse);
+        return bookResponse;
     }
-
-    public List<Book> getBooksByFaculty(Faculty faculty) {
-        String facultyName = facultyService.getFacultyDisplayName(faculty); // Используем FacultyService
-        logger.info("Fetching books for faculty: {}", facultyName);
-        return bookRepository.findByFaculty(faculty);
-    }
-
-    public List<Book> getBooksForUser(LibraryUser user) {
-        logger.info("Fetching books for user: {}", user.getUsername());
-
-        if (user.getFaculties().isEmpty()) {
-            logger.info("User  has no faculties, fetching common books");
-            return bookRepository.findByFacultiesType(FacultyType.COMMON);
-        } else {
-            logger.info("Fetching books for faculties: {}", user.getFaculties());
-            return bookRepository.findByFacultiesIn(user.getFaculties());
-        }
-    }
-
-    // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\services\BookService.java
-
-    public boolean isBookAddedByUser(Long bookId, String username) {
-        Book book = getBookById(bookId);
-        return book.getEntry().getAddedBy().getUsername().equals(username);
-    }
-
-    // Код из файла: C:\Users\Дмитрий\IdeaProjects\ProjectLibrary\src\main\java\org\example\library\services\BookService.java
-
-    public Book updateBook(Book book) {
-        // Здесь вы можете добавить логику для проверки, является ли пользователь преподавателем и добавил ли он эту книгу
-        logger.debug("Method updateBook with parameters: book {} ", book);
-        return bookRepository.save(book); // Сохраняем обновленную книгу
-    }
-
-    public List<Book> getBooksByUserId(Long userId) {
-        logger.info("Fetching books added by user with ID: {}", userId);
-        return bookRepository.findByAddedById(userId); // Предполагается, что у вас есть соответствующий метод в репозитории
-    }
-
-
 }

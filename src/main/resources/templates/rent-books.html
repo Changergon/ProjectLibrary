@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Аренда книг</title>
+    <link rel="stylesheet" href="/navbar.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #444;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        thead {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .request-btn {
+            padding: 8px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .request-btn:hover {
+            background-color: #218838;
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{navbar :: navbar}"></div>
+
+<div class="container">
+    <h1>Доступные книги для аренды</h1>
+
+    <div id="message-container"></div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Название</th>
+            <th>Автор</th>
+            <th>Расположение (Ряд-Полка-Место)</th>
+            <th>Действие</th>
+        </tr>
+        </thead>
+        <tbody id="available-copies-body">
+        <!-- Данные будут загружены через JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchAvailableCopies();
+    });
+
+    function fetchAvailableCopies() {
+        fetch('/api/rental-requests/available-copies')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке доступных книг.');
+                }
+                return response.json();
+            })
+            .then(copies => {
+                const tableBody = document.getElementById('available-copies-body');
+                tableBody.innerHTML = ''; // Очищаем таблицу
+
+                if (copies.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Нет доступных книг для аренды.</td></tr>';
+                    return;
+                }
+
+                copies.forEach(copy => {
+                    const row = document.createElement('tr');
+                    const authors = copy.authorNames.join(', ');
+
+                    row.innerHTML = `
+                        <td>${copy.bookTitle}</td>
+                        <td>${authors}</td>
+                        <td>${copy.rowNumber}-${copy.shelfNumber}-${copy.positionNumber}</td>
+                        <td>
+                            <button class="request-btn" onclick="requestBook(${copy.copyId})">Запросить</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                showMessage(error.message, 'error');
+            });
+    }
+
+    function requestBook(copyId) {
+        fetch(`/api/rental-requests/copy/${copyId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showMessage('Запрос на аренду успешно отправлен!', 'success');
+                fetchAvailableCopies();
+            } else if (response.status === 409) {
+                throw new Error('Вы уже запросили эту книгу или она стала недоступна.');
+            } else {
+                throw new Error('Не удалось отправить запрос.');
+            }
+        })
+        .catch(error => {
+            showMessage(error.message, 'error');
+        });
+    }
+
+    function showMessage(text, type) {
+        const container = document.getElementById('message-container');
+        container.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+</script>
+
+</body>
+</html>

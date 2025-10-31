@@ -1,17 +1,38 @@
+version: '3.8'
+
 services:
   postgres:
-    image: postgres:16  # Используем конкретную версию PostgresSQL (например, 16)
-    container_name: library-postgres  # Имя контейнера
-    restart: always
+    image: postgres:15-alpine
+    container_name: library-postgres
     environment:
-      POSTGRES_DB: library  # Имя базы данных, которую нужно создать
-      POSTGRES_USER: postgres  # Имя пользователя
-      POSTGRES_PASSWORD: postgres  # Пароль для пользователя
+      POSTGRES_DB: library
+      POSTGRES_USER: library
+      POSTGRES_PASSWORD: library_password
     ports:
-      - "5432:5432"  # Пробрасываем порт 5432
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Монтируем том для хранения данных
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U library" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: library-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/library
+      SPRING_DATASOURCE_USERNAME: library
+      SPRING_DATASOURCE_PASSWORD: library_password
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8081:8081"
 
 volumes:
-  postgres_data:  # Определяем том для хранения данных
-
+  postgres_data:

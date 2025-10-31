@@ -1,0 +1,179 @@
+openapi: 3.1.0
+info:
+  title: ProjectLibrary API
+  version: 1.0.0
+  description: REST API для электронной библиотеки
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development
+
+paths:
+  /books:
+    get:
+      tags: [Books]
+      summary: Получить список книг
+      operationId: getBooks
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Успешно получен список
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PageBookResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+    post:
+      tags: [Books]
+      summary: Создать новую книгу
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookRequest' }
+      responses:
+        '201':
+          description: Книга успешно создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BookResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /books/{id}:
+    get:
+      tags: [Books]
+      operationId: getBookById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Книга найдена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BookResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+    put:
+      tags: [Books]
+      operationId: updateBook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookRequest' }
+      responses:
+        '200':
+          description: Книга обновлена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BookResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+    delete:
+      tags: [Books]
+      operationId: deleteBook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Книга удалена
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  schemas:
+    BookRequest:
+      type: object
+      required: [title, author, isbn]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 255 }
+        author: { type: string, minLength: 1, maxLength: 255 }
+        isbn: { type: string, pattern: '^[0-9-]{10,17}$' }
+        description: { type: string, maxLength: 2000 }
+        publicationYear: { type: integer, minimum: 1450, maximum: 2100 }
+        pageCount: { type: integer, minimum: 1 }
+
+    BookResponse:
+      allOf:
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+        - $ref: '#/components/schemas/BookRequest'
+
+    PageBookResponse:
+      type: object
+      properties:
+        content: { type: array, items: { $ref: '#/components/schemas/BookResponse' } }
+        totalElements: { type: integer }
+        totalPages: { type: integer }
+        currentPage: { type: integer }
+        pageSize: { type: integer }
+
+    ErrorResponse:
+      type: object
+      required: [error, message, timestamp]
+      properties:
+        error: { type: string, enum: [VALIDATION_ERROR, NOT_FOUND, INTERNAL_ERROR] }
+        message: { type: string }
+        timestamp: { type: string, format: date-time }
+        details: { type: array, items: { type: string } }
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - properties:
+                  error: { enum: [VALIDATION_ERROR] }
+
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - properties:
+                  error: { enum: [NOT_FOUND] }
+
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - properties:
+                  error: { enum: [INTERNAL_ERROR] }
+
+    ValidationError:
+      description: Ошибка валидации
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
